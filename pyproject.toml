@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "askwarehouse"
+version = "0.1.0"
+description = "A text-to-SQL analytics agent with execution-verified answers"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+askwarehouse = "askwarehouse.ui.cli:main"
