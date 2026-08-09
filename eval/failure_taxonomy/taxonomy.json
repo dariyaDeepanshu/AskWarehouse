@@ -1,0 +1,771 @@
+{
+  "n_failures": 94,
+  "category_counts": {
+    "join_path": 40,
+    "schema_linking": 13,
+    "ambiguity_external_knowledge": 31,
+    "date_logic": 6,
+    "aggregation_grain": 4
+  },
+  "category_pct": {
+    "join_path": 0.425531914893617,
+    "schema_linking": 0.13829787234042554,
+    "ambiguity_external_knowledge": 0.32978723404255317,
+    "date_logic": 0.06382978723404255,
+    "aggregation_grain": 0.0425531914893617
+  },
+  "rows": [
+    {
+      "source": "bird_mini_dev",
+      "question": "Which drivers who were born in 1971 and has the fastest lap time on the race? Give id and code of these drivers.",
+      "pred_sql": "SELECT d.driverId, d.code FROM drivers AS d JOIN results AS r ON d.driverId = r.driverId WHERE STRFTIME('%Y', d.dob) = '1971' AND NOT r.fastestLap IS NULL AND r.statusId IN (SELECT statusId FROM status WHERE status = '+1 Lap') LIMIT 5000",
+      "gold_sql": "SELECT T2.driverId, T2.code FROM results AS T1 INNER JOIN drivers AS T2 on T1.driverId = T2.driverId WHERE STRFTIME('%Y', T2.dob) = '1971' AND T1.fastestLapTime IS NOT NULL",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Calculate the percentage whereby Hamilton was not at the 1st track of the the f1 circuit since 2010.",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN T1.surname = 'Hamilton' AND T2.position > 1 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T2.driverid) FROM drivers AS T1 JOIN results AS T2 ON T1.driverid = T2.driverid WHERE T2.year >= 2010 LIMIT 5000",
+      "gold_sql": "SELECT CAST(COUNT(CASE WHEN T2.position <> 1 THEN T2.position END) AS REAL) * 100 / COUNT(T2.driverStandingsId) FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.surname = 'Hamilton' AND T1.year >= 2010",
+      "error": "no such column: T2.year",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "For laboratory examinations take in 1984, list all patients below 50 years old with normal platelet level.",
+      "pred_sql": "SELECT DISTINCT p.ID, p.Description FROM main.Patient AS p JOIN main.Laboratory AS l ON p.ID = l.ID WHERE STRFTIME('%Y', l.Date) = '1984' AND NOT p.Birthday IS NULL AND p.Birthday <= DATE('now', '-50 years') AND l.PLT BETWEEN 100 AND 400 LIMIT 5000",
+      "gold_sql": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.PLT BETWEEN 100 AND 400 AND STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday) < 50 AND STRFTIME('%Y', T2.Date) = '1984'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among posts by Harvey Motulsky and Noah Snyder, which one has higher popularity?",
+      "pred_sql": "SELECT CASE WHEN SUM(CASE WHEN p.OwnerDisplayName = 'Harvey Motulsky' THEN p.ViewCount ELSE 0 END) > SUM(CASE WHEN p.OwnerDisplayName = 'Noah Snyder' THEN p.ViewCount ELSE 0 END) THEN 'Harvey Motulsky' ELSE 'Noah Snyder' END AS MorePopularAuthor, MAX(SUM(CASE WHEN p.OwnerDisplayName = 'Harvey Motulsky' THEN p.ViewCount ELSE 0 END), SUM(CASE WHEN p.OwnerDisplayName = 'Noah Snyder' THEN p.ViewCount ELSE 0 END)) AS HigherViewCount FROM main.posts AS p WHERE p.OwnerDisplayName IN ('Harvey Motulsky', 'Noah Snyder') LIMIT 5000",
+      "gold_sql": "SELECT T1.DisplayName FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T1.DisplayName = 'Harvey Motulsky' OR T1.DisplayName = 'Noah Snyder' GROUP BY T1.DisplayName ORDER BY SUM(T3.ViewCount) DESC LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the border color of card \"Ancestor's Chosen\"?",
+      "pred_sql": "SELECT borderColor FROM main.cards WHERE name = 'Ancestor''s Chosen' LIMIT 5000",
+      "gold_sql": "SELECT DISTINCT borderColor FROM cards WHERE name = 'Ancestor''s Chosen'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "User No.3025 gave a comment at 20:29:39 on 2014/4/23 to a post, how many favorite counts did that post get?",
+      "pred_sql": "SELECT p.FavoriteCount FROM main.posts AS p JOIN main.comments AS c ON p.Id = c.PostId WHERE c.UserId = 3025 AND c.CreationDate = '2014-04-23 20:29:39' LIMIT 5000",
+      "gold_sql": "SELECT T1.FavoriteCount FROM posts AS T1 INNER JOIN comments AS T2 ON T1.Id = T2.PostId WHERE T2.CreationDate = '2014-04-23 20:29:39.0' AND T2.UserId = 3025",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Which top 4 leagues had the most games in the 2015-2016 season?",
+      "pred_sql": "SELECT l.name, COUNT(m.id) AS game_count FROM main.Match AS m JOIN main.League AS l ON m.league_id = l.id WHERE m.season = '2015/2016' GROUP BY l.name ORDER BY game_count DESC LIMIT 4",
+      "gold_sql": "SELECT t1.name FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t2.season = '2015/2016' GROUP BY t1.name ORDER BY COUNT(t2.id) DESC LIMIT 4",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "For all the people who paid more than 29.00 per unit of product id No.5. Give their consumption status in the August of 2012.",
+      "pred_sql": "SELECT c.CustomerID, c.Segment, c.Currency, y.Consumption FROM main.customers AS c JOIN main.transactions_1k AS t ON c.CustomerID = t.CustomerID JOIN main.yearmonth AS y ON c.CustomerID = y.CustomerID WHERE t.ProductID = 5 AND t.Price / t.Amount > 29.00 AND y.Date = '201208' LIMIT 100",
+      "gold_sql": "SELECT T2.Consumption FROM transactions_1k AS T1 INNER JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Price / T1.Amount > 29.00 AND T1.ProductID = 5 AND T2.Date = '201208'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the percentage of double bonds in the molecule TR008? Please provide your answer as a percentage with five decimal places.",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN T1.bond_type = '=' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.bond_id) AS percent FROM main.bond AS T1 JOIN main.molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = 'TR008' LIMIT 5000",
+      "gold_sql": "SELECT ROUND(CAST(COUNT(CASE WHEN T.bond_type = '=' THEN T.bond_id ELSE NULL END) AS REAL) * 100 / COUNT(T.bond_id),5) FROM bond AS T WHERE T.molecule_id = 'TR008'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Between 1/1/1995 and 12/31/1997, how many loans in the amount of at least 250,000 per account that chose monthly statement issuance were approved?",
+      "pred_sql": "SELECT COUNT(*) FROM main.loan AS l JOIN main.account AS a ON l.account_id = a.account_id WHERE a.frequency = 'POPLATEK MESICNE' AND l.amount >= 250000 AND l.status = 'A' AND l.date BETWEEN '1995-01-01' AND '1997-12-31' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(T1.account_id) FROM account AS T1 INNER JOIN loan AS T2 ON T1.account_id = T2.account_id WHERE T2.date BETWEEN '1995-01-01' AND '1997-12-31' AND T1.frequency = 'POPLATEK MESICNE' AND T2.amount >= 250000",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among all the atoms from 21 to 25, list all the molecules that are carcinogenic.",
+      "pred_sql": "SELECT DISTINCT m.label FROM main.atom AS a JOIN main.molecule AS m ON a.molecule_id = m.molecule_id WHERE SUBSTRING(a.atom_id, 7, 2) BETWEEN '21' AND '25' AND m.label = '+' LIMIT 5000",
+      "gold_sql": "SELECT DISTINCT T2.molecule_id FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE SUBSTR(T1.atom_id, -2) BETWEEN '21' AND '25' AND T2.label = '+'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "List down top 3 German drivers who has the shortest average pit stop duration and were born between 1980-1985.",
+      "pred_sql": "SELECT d.forename, d.surname, AVG(p.duration) AS avg_duration FROM main.drivers AS d JOIN main.pitStops AS p ON d.driverId = p.driverId WHERE d.dob BETWEEN '1980-01-01' AND '1985-12-31' GROUP BY d.driverId ORDER BY avg_duration ASC LIMIT 3",
+      "gold_sql": "SELECT T2.forename, T2.surname FROM pitStops AS T1 INNER JOIN drivers AS T2 on T1.driverId = T2.driverId WHERE T2.nationality = 'German' AND STRFTIME('%Y', T2.dob) BETWEEN '1980' AND '1985' GROUP BY T2.forename, T2.surname ORDER BY AVG(T1.duration) LIMIT 3",
+      "error": null,
+      "category": "date_logic"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Which driver ranked the first in the Canadian Grand Prix in 2007? Please give his reference name.",
+      "pred_sql": "SELECT d.driverRef FROM drivers AS d JOIN results AS r ON d.driverId = r.driverId JOIN races AS ra ON r.raceId = ra.raceId WHERE ra.name = 'Canadian Grand Prix' AND ra.year = 2007 AND r.position = 1 LIMIT 5000",
+      "gold_sql": "SELECT T3.forename, T3.surname, T3.driverRef FROM races AS T1 INNER JOIN results AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T1.name = 'Canadian Grand Prix' AND T2.rank = 1 AND T1.year = 2007",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "How many patients with a abnormal C-reactive protein don't have their data recorded?",
+      "pred_sql": "SELECT COUNT(DISTINCT p.ID) FROM main.Patient AS p LEFT JOIN main.Laboratory AS l ON p.ID = l.ID WHERE p.Description IS NULL AND l.CRP = '+' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE (T2.CRP = '+' ) AND T1.Description IS NULL",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the percentage of the customers who used EUR in 2012/8/25?",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN customers.Currency = 'EUR' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(customers.CustomerID) AS Percentage FROM main.customers JOIN main.transactions_1k ON main.customers.CustomerID = main.transactions_1k.CustomerID WHERE main.transactions_1k.Date = '2012-08-25' AND main.transactions_1k.Time = '00:00:00' LIMIT 5000",
+      "gold_sql": "SELECT CAST(SUM(IIF(T2.Currency = 'EUR', 1, 0)) AS FLOAT) * 100 / COUNT(T1.CustomerID) FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = '2012-08-25'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the percentage difference of student badges given during 2010 and 2011?",
+      "pred_sql": "SELECT ((SUM(CASE WHEN STRFTIME('%Y', T1.Date) = '2010' THEN 1 ELSE 0 END) / COUNT(T1.Id)) - (SUM(CASE WHEN STRFTIME('%Y', T1.Date) = '2011' THEN 1 ELSE 0 END) / COUNT(T1.Id))) * 100 AS PercentageDifference FROM main.badges AS T1 WHERE T1.Name = 'Student' LIMIT 5000",
+      "gold_sql": "SELECT CAST(SUM(IIF(STRFTIME('%Y', Date) = '2010', 1, 0)) AS REAL) * 100 / COUNT(Id) - CAST(SUM(IIF(STRFTIME('%Y', Date) = '2011', 1, 0)) AS REAL) * 100 / COUNT(Id) FROM badges WHERE Name = 'Student'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "When was the first time did Kevin Constant have his highest crossing score? Give the date.",
+      "pred_sql": "SELECT T1.date FROM Player_Attributes AS T1 JOIN Player AS T2 ON T1.player_api_id = T2.player_api_id WHERE T2.player_name = 'Kevin Constant' ORDER BY T1.crossing DESC LIMIT 1",
+      "gold_sql": "SELECT `date` FROM ( SELECT t2.crossing, t2.`date` FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_fifa_api_id = t2.player_fifa_api_id WHERE t1.player_name = 'Kevin Constant' ORDER BY t2.crossing DESC) ORDER BY date DESC LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "For the user No.24, how many times is the number of his/her posts compared to his/her votes?",
+      "pred_sql": "SELECT CAST(COUNT(posts.Id) AS REAL) / COUNT(votes.Id) AS PostToVoteRatio FROM main.posts LEFT JOIN main.votes ON posts.Id = votes.PostId AND posts.OwnerUserId = '24' WHERE posts.OwnerUserId = '24' LIMIT 5000",
+      "gold_sql": "SELECT CAST(COUNT(DISTINCT T2.Id) AS REAL) / COUNT(DISTINCT T1.Id) FROM votes AS T1 INNER JOIN posts AS T2 ON T1.UserId = T2.OwnerUserId WHERE T1.UserId = 24",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Indicate the cost of posters for 'September Speaker' event.",
+      "pred_sql": "SELECT ex.cost FROM main.event AS e JOIN main.expense AS ex ON e.event_id = ex.link_to_event WHERE e.event_name = 'September Speaker' AND ex.expense_description = 'Posters' LIMIT 5000",
+      "gold_sql": "SELECT T3.cost FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'September Speaker' AND T3.expense_description = 'Posters'",
+      "error": "no such column: ex.link_to_event",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Calculate the total atoms with triple-bond molecules containing the element phosphorus or bromine.",
+      "pred_sql": "SELECT COUNT(*) FROM (SELECT m.molecule_id FROM main.bond AS b JOIN main.atom AS a ON b.bond_id = a.bond_id JOIN main.molecule AS m ON a.molecule_id = m.molecule_id WHERE b.bond_type = '#' AND (a.element = 'p' OR a.element = 'br') GROUP BY m.molecule_id HAVING COUNT(m.molecule_id) >= 3) LIMIT 5000",
+      "gold_sql": "SELECT COUNT(T1.atom_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id INNER JOIN bond AS T3 ON T2.molecule_id = T3.molecule_id WHERE T3.bond_type = '#' AND T1.element IN ('p', 'br')",
+      "error": "no such column: a.bond_id",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "For the client whose loan was approved first in 1993/7/5, what is the increase rate of his/her account balance from 1993/3/22 to 1998/12/27?",
+      "pred_sql": "WITH first_loan AS (SELECT c.client_id, MIN(t.balance) AS start_balance FROM main.client AS c JOIN main.loan AS l ON c.client_id = l.account_id JOIN main.trans AS t ON c.client_id = t.account_id WHERE l.date = '1993-07-05' AND t.date <= '1993-03-22' GROUP BY c.client_id), last_balance AS (SELECT t.account_id, MAX(t.balance) AS end_balance FROM main.trans AS t WHERE t.date BETWEEN '1993-03-22' AND '1998-12-27' AND t.type = 'VYBER' AND t.operation = 'VYBER KARTOU' AND t.bank IN ('AB', 'YZ', 'ST', 'QR', 'WX', 'CD') GROUP BY t.account_id) SELECT ((lb.end_balance - fl.start_balance) / fl.start_balance) * 100 AS increase_rate FROM first_loan AS fl JOIN last_balance AS lb ON fl.client_id = lb.account_id LIMIT 5000",
+      "gold_sql": "SELECT CAST((SUM(IIF(T3.date = '1998-12-27', T3.balance, 0)) - SUM(IIF(T3.date = '1993-03-22', T3.balance, 0))) AS REAL) * 100 / SUM(IIF(T3.date = '1993-03-22', T3.balance, 0)) FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id INNER JOIN trans AS T3 ON T3.account_id = T2.account_id WHERE T1.date = '1993-07-05'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "How many cards have infinite power?",
+      "pred_sql": "SELECT COUNT(*) FROM main.cards WHERE power = '\u221e' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM cards WHERE power = '*'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "List the elements of all the triple bonds.",
+      "pred_sql": "SELECT DISTINCT a.element FROM main.atom AS a JOIN main.bond AS b ON a.molecule_id = b.molecule_id WHERE b.bond_type = '#' LIMIT 5000",
+      "gold_sql": "SELECT DISTINCT T3.element FROM bond AS T1 INNER JOIN connected AS T2 ON T1.bond_id = T2.bond_id INNER JOIN atom AS T3 ON T2.atom_id = T3.atom_id WHERE T1.bond_type = '#'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the foreign name of the card in French of type Creature, normal layout and black border color, by artist Matthew D. Wilson?",
+      "pred_sql": "SELECT T2.name FROM main.cards AS T1 JOIN main.foreign_data AS T2 ON T1.scryfallId = T2.uuid WHERE T1.artist = 'Matthew D. Wilson' AND T1.borderColor = 'black' AND T1.type = 'Creature' AND T1.layout = 'normal' AND T2.language = 'French' LIMIT 5000",
+      "gold_sql": "SELECT name FROM foreign_data WHERE uuid IN ( SELECT uuid FROM cards WHERE types = 'Creature' AND layout = 'normal' AND borderColor = 'black' AND artist = 'Matthew D. Wilson' ) AND language = 'French'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What are the symptoms observed by the youngest patient to ever did a medical examination? Identify their diagnosis.",
+      "pred_sql": "SELECT T2.Symptoms, T2.Diagnosis FROM Patient AS T1 JOIN Examination AS T2 ON T1.ID = T2.ID WHERE NOT T2.Symptoms IS NULL ORDER BY T1.Birthday ASC LIMIT 1",
+      "gold_sql": "SELECT T2.Symptoms, T1.Diagnosis FROM Patient AS T1 INNER JOIN Examination AS T2 ON T1.ID = T2.ID WHERE T2.Symptoms IS NOT NULL ORDER BY T1.Birthday DESC LIMIT 1",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Provide the heights of the heroes whose eye colours are amber.",
+      "pred_sql": "SELECT s.height_cm\nFROM main.superhero s\nJOIN main.eye_colour ec ON s.eye_colour_id = ec.id\nJOIN main.colour c ON ec.colour_id = c.id\nWHERE c.colour = 'Amber'",
+      "gold_sql": "SELECT T1.height_cm FROM superhero AS T1 INNER JOIN colour AS T2 ON T1.eye_colour_id = T2.id WHERE T2.colour = 'Amber'",
+      "error": "no such table: main.eye_colour",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "For the set of cards with \"Ancestor's Chosen\" in it, is there a Korean version of it?",
+      "pred_sql": "SELECT EXISTS(SELECT 1 FROM main.cards AS c JOIN main.foreign_data AS f ON c.multiverseId = f.multiverseid WHERE c.name = 'Ancestor''s Chosen' AND f.language = 'Korean') LIMIT 5000",
+      "gold_sql": "SELECT IIF(SUM(CASE WHEN T2.language = 'Korean' AND T2.translation IS NOT NULL THEN 1 ELSE 0 END) > 0, 'YES', 'NO') FROM cards AS T1 INNER JOIN set_translations AS T2 ON T2.setCode = T1.setCode WHERE T1.name = 'Ancestor''s Chosen'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among the accounts who have loan validity more than 12 months, list out the accounts that have the highest approved amount and have account opening date in 1993.",
+      "pred_sql": "SELECT a.account_id, MAX(l.amount) AS max_amount FROM main.account AS a JOIN main.loan AS l ON a.account_id = l.account_id WHERE l.duration > 12 AND STRFTIME('%Y', a.date) = '1993' GROUP BY a.account_id ORDER BY max_amount DESC LIMIT 1",
+      "gold_sql": "SELECT T1.account_id FROM loan AS T1 INNER JOIN account AS T2 ON T1.account_id = T2.account_id WHERE STRFTIME('%Y', T2.date) = '1993' AND T1.duration > 12 ORDER BY T1.amount DESC LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Provide the text of the latest 10 comments to the post with the title 'Analysing wind data with R' and the display name of the user who left it.",
+      "pred_sql": "SELECT c.Text, u.DisplayName FROM main.comments AS c JOIN main.posts AS p ON c.PostId = p.Id JOIN main.users AS u ON c.UserId = u.Id WHERE p.Title = 'Analysing wind data with R' ORDER BY c.CreationDate DESC LIMIT 10",
+      "gold_sql": "SELECT T3.Text, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T2.Title = 'Analysing wind data with R' ORDER BY T1.CreationDate DESC LIMIT 10",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the average of the up votes and the average user age for users creating more than 10 posts?",
+      "pred_sql": "SELECT AVG(T1.UpVotes) AS AverageUpVotes, AVG(T1.Age) AS AverageAge FROM main.users AS T1 JOIN main.posts AS T2 ON T1.Id = T2.OwnerUserId WHERE T2.OwnerDisplayName = 'user28' GROUP BY T1.Id HAVING COUNT(T2.Id) > 10 LIMIT 5000",
+      "gold_sql": "SELECT AVG(T1.UpVotes), AVG(T1.Age) FROM users AS T1 INNER JOIN ( SELECT OwnerUserId, COUNT(*) AS post_count FROM posts GROUP BY OwnerUserId HAVING post_count > 10) AS T2 ON T1.Id = T2.OwnerUserId",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among the patients who were diagnosed with SLE, who is the oldest with normal hemoglobin level. Provide the ID and sex.",
+      "pred_sql": "SELECT p.ID, p.SEX FROM main.Patient AS p JOIN (SELECT l.PID, MAX(l.HGB) AS max_hgb FROM main.Laboratory AS l WHERE l.HGB BETWEEN 10 AND 17 GROUP BY l.PID) AS sub ON p.ID = sub.PID WHERE p.Diagnosis = 'SLE' AND p.Birthday <= DATE('now', '-(strftime(\"%J\", sub.max_hgb) - strftime(\"%J\", \"1970-01-01\")) days') ORDER BY p.Birthday ASC LIMIT 1",
+      "gold_sql": "SELECT T1.ID, T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Diagnosis = 'SLE' AND T2.HGB > 10 AND T2.HGB < 17 ORDER BY T1.Birthday ASC LIMIT 1",
+      "error": "no such column: l.PID",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among the customers who paid in euro, how many of them have a monthly consumption of over 1000?",
+      "pred_sql": "SELECT COUNT(DISTINCT c.CustomerID) FROM main.customers AS c JOIN (SELECT CustomerID, SUM(Consumption) AS MonthlyConsumption FROM main.yearmonth WHERE STRFTIME('%Y-%m', Date) IN (SELECT DISTINCT STRFTIME('%Y-%m', t.Date) FROM main.transactions_1k AS t JOIN main.customers AS cu ON t.CustomerID = cu.CustomerID WHERE cu.Currency = 'EUR') GROUP BY CustomerID) AS ym ON c.CustomerID = ym.CustomerID WHERE ym.MonthlyConsumption > 1000 AND c.Currency = 'EUR' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM yearmonth AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T2.Currency = 'EUR' AND T1.Consumption > 1000.00",
+      "error": null,
+      "category": "aggregation_grain"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What percentage of carcinogenic-type molecules does not contain fluorine?",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN T3.element = 'f' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id) AS percentage FROM main.molecule AS T1 JOIN main.bond AS T2 ON T1.molecule_id = T2.molecule_id LEFT JOIN main.atom AS T3 ON T2.molecule_id = T3.molecule_id WHERE T1.label = '+' LIMIT 5000",
+      "gold_sql": "SELECT CAST(COUNT(DISTINCT CASE WHEN T1.element <> 'f' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id) FROM atom AS T1 INNER JOIN molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = '+'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Which user have only one post history per post and having at least 1000 views?",
+      "pred_sql": "SELECT u.Id, u.DisplayName, p.PostId FROM users AS u JOIN posts AS p ON u.Id = p.OwnerUserId WHERE p.Views >= 1000 GROUP BY u.Id, u.DisplayName, p.PostId HAVING COUNT(DISTINCT p.PostId) = 1 LIMIT 5000",
+      "gold_sql": "SELECT T2.UserId FROM users AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.UserId INNER JOIN posts AS T3 ON T2.PostId = T3.Id WHERE T3.ViewCount >= 1000 GROUP BY T2.UserId HAVING COUNT(DISTINCT T2.PostHistoryTypeId) = 1",
+      "error": "no such column: p.PostId",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among the account opened, how many female customers who were born before 1950 and stayed in Sokolov?",
+      "pred_sql": "SELECT COUNT(DISTINCT c.client_id)\nFROM main.client c\nJOIN main.account a ON c.district_id = a.district_id\nWHERE c.gender = 'F'\nAND c.birth_date < '1950-01-01'\nAND a.date BETWEEN '1970-01-01' AND '2023-12-31'",
+      "gold_sql": "SELECT COUNT(T2.client_id) FROM district AS T1 INNER JOIN client AS T2 ON T1.district_id = T2.district_id WHERE T2.gender = 'F' AND STRFTIME('%Y', T2.birth_date) < '1950' AND T1.A2 = 'Sokolov'",
+      "error": null,
+      "category": "date_logic"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Who is the champion of the Canadian Grand Prix in 2008? Indicate his finish time.",
+      "pred_sql": "SELECT r.driverid, r.position, r.time FROM results AS r JOIN races AS ra ON r.raceid = ra.raceid WHERE ra.name = 'Canadian Grand Prix' AND ra.year = 2008 AND r.statusid = (SELECT statusid FROM status WHERE status = 'Finished') ORDER BY r.position ASC LIMIT 1",
+      "gold_sql": "SELECT T1.time FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.name = 'Canadian Grand Prix' AND T2.year = 2008 AND T1.time LIKE '_:%:__.___'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Are there more in-patient or outpatient who were male? What is the deviation in percentage?",
+      "pred_sql": "SELECT SUM(CASE WHEN Admission = '+' THEN 1 ELSE 0 END) AS InpatientMale, SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END) AS OutpatientMale, CAST(SUM(CASE WHEN Admission = '+' THEN 1 ELSE 0 END) AS REAL) * 100 / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END) AS PercentageDeviation FROM main.Patient WHERE SEX = 'M' AND Admission IN ('+', '-') LIMIT 5000",
+      "gold_sql": "SELECT CAST(SUM(CASE WHEN Admission = '+' THEN 1 ELSE 0 END) AS REAL) * 100 / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END) FROM Patient WHERE SEX = 'M'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "List all the card id and artist with unknown power which are legal for commander play format.",
+      "pred_sql": "SELECT cards.id, cards.artist FROM cards JOIN legalities ON cards.uuid = legalities.uuid WHERE (cards.power = '*' OR cards.power IS NULL) AND legalities.format = 'commander' AND legalities.status = 'Legal' LIMIT 5000",
+      "gold_sql": "SELECT T1.id, T1.artist FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T2.status = 'Legal' AND T2.format = 'commander' AND (T1.power IS NULL OR T1.power = '*')",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "List and group all patients by sex for total bilirubin (T-BIL) level not within the normal range.",
+      "pred_sql": "SELECT p.SEX, GROUP_CONCAT(DISTINCT p.ID) AS PatientIDs, SUM(l.T_BIL) AS TotalTBIL FROM main.Patient AS p JOIN main.Laboratory AS l ON p.ID = l.ID WHERE l.T_BIL >= 2.0 GROUP BY p.SEX LIMIT 5000",
+      "gold_sql": "SELECT T1.ID,T1.SEX FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.`T-BIL` >= 2.0 GROUP BY T1.SEX,T1.ID",
+      "error": "no such column: l.T_BIL",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Write all the comments left by users who edited the post titled 'Why square the difference instead of taking the absolute value in standard deviation?'",
+      "pred_sql": "SELECT c.Id, c.Score, c.Text, c.CreationDate, u.DisplayName FROM main.comments AS c JOIN main.users AS u ON c.UserId = u.Id WHERE c.PostId IN (SELECT p.Id FROM main.posts AS p WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?') AND c.CreationDate > '2020-01-01' LIMIT 5000",
+      "gold_sql": "SELECT T2.Comment FROM posts AS T1 INNER JOIN postHistory AS T2 ON T1.Id = T2.PostId WHERE T1.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is his number of the driver who finished 0:01:54 in the Q3 of qualifying race No.903?",
+      "pred_sql": "SELECT T1.number FROM qualifying AS T1 WHERE T1.q3 LIKE '0:01:%' AND T1.raceId = 903 LIMIT 5000",
+      "gold_sql": "SELECT T2.number FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 903 AND T1.q3 LIKE '1:54%'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What are the short name of team who played safe while creating chance of passing?",
+      "pred_sql": "SELECT T1.team_short_name FROM main.Team AS T1 JOIN main.Team_Attributes AS T2 ON T1.team_api_id = T2.team_api_id WHERE T2.chanceCreationPassingClass = 'Safe' LIMIT 5000",
+      "gold_sql": "SELECT DISTINCT t1.team_short_name FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t2.chanceCreationPassingClass = 'Safe'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Of the schools that offers a magnet program serving a grade span of Kindergarten to 8th grade, how many offers Multiple Provision Types? List the number of cities that offers a Kindergarten to 8th grade span and indicate how many schools are there serving such grade span for each city.",
+      "pred_sql": "SELECT COUNT(*) AS TotalSchools, COUNT(DISTINCT T1.City) AS NumberOfCities FROM main.schools AS T1 JOIN main.frpm AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.Magnet = 1 AND T2.School_Type = 'Elementary Schools (Public)' AND T2.Low_Grade = 'K' AND T2.High_Grade = '8' LIMIT 5000",
+      "gold_sql": "SELECT T2.City, COUNT(T2.CDSCode) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.Magnet = 1 AND T2.GSoffered = 'K-8' AND T1.`NSLP Provision Status` = 'Multiple Provision Types' GROUP BY T2.City",
+      "error": "no such column: T2.School_Type",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the display name of the user who last edited the post \"Examples for teaching: Correlation does not mean causation\"?",
+      "pred_sql": "SELECT p.LastEditorDisplayName FROM main.posts AS p WHERE p.Title = 'Examples for teaching: Correlation does not mean causation' AND p.LastEditorUserId IN (SELECT u.Id FROM main.users AS u WHERE u.DisplayName = 'user20914') LIMIT 5000",
+      "gold_sql": "SELECT T2.DisplayName FROM posts AS T1 INNER JOIN users AS T2 ON T1.LastEditorUserId = T2.Id WHERE T1.Title = 'Examples for teaching: Correlation does not mean causation'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Which event has the lowest cost?",
+      "pred_sql": "SELECT e.event_name FROM main.event AS e JOIN main.expense AS ex ON e.event_id = ex.link_to_budget WHERE ex.approved = 'true' GROUP BY e.event_name ORDER BY SUM(ex.cost) ASC LIMIT 1",
+      "gold_sql": "SELECT T1.event_name FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget ORDER BY T3.cost LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Which publisher published the slowest superhero?",
+      "pred_sql": "SELECT p.publisher_name FROM main.publisher AS p JOIN main.superhero AS s ON p.id = s.publisher_id WHERE s.id IN (SELECT sp.id FROM main.superhero AS sp JOIN main.hero_power AS hp ON sp.id = hp.hero_id JOIN main.superpower AS pwr ON hp.power_id = pwr.id WHERE pwr.power_name = 'Speed' ORDER BY sp.height_cm ASC LIMIT 1) LIMIT 5000",
+      "gold_sql": "SELECT T2.publisher_name FROM superhero AS T1 INNER JOIN publisher AS T2 ON T1.publisher_id = T2.id INNER JOIN hero_attribute AS T3 ON T1.id = T3.hero_id INNER JOIN attribute AS T4 ON T3.attribute_id = T4.id WHERE T4.attribute_name = 'Speed' ORDER BY T3.attribute_value LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "State code numbers of top 3 yougest drivers. How many Netherlandic drivers among them?",
+      "pred_sql": "WITH YoungestDrivers AS (SELECT driverId, code, COUNT(*) OVER () AS total_youngest_drivers FROM drivers WHERE NOT dob IS NULL ORDER BY dob DESC LIMIT 3), NetherlandicDrivers AS (SELECT COUNT(*) AS netherlandic_count FROM drivers WHERE nationality = 'Dutch') SELECT YD.code, ND.netherlandic_count FROM YoungestDrivers AS YD CROSS JOIN NetherlandicDrivers AS ND LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM ( SELECT T1.nationality FROM drivers AS T1 ORDER BY JULIANDAY(T1.dob) DESC LIMIT 3) AS T3 WHERE T3.nationality = 'Dutch'",
+      "error": null,
+      "category": "date_logic"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "How much of the hydrogen in molecule TR206 is accounted for? Please provide your answer as a percentage with four decimal places.",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN T1.element = 'h' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.element) AS percent FROM main.atom AS T1 JOIN main.molecule AS T2 ON T1.molecule_id = T2.molecule_id WHERE T2.label = 'TR206' LIMIT 5000",
+      "gold_sql": "SELECT ROUND(CAST(COUNT(CASE WHEN T.element = 'h' THEN T.atom_id ELSE NULL END) AS REAL) * 100 / COUNT(T.atom_id),4) FROM atom AS T WHERE T.molecule_id = 'TR206'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What are the speed in which attacks are put together of the top 4 teams with the highest build Up Play Speed?",
+      "pred_sql": "SELECT buildUpPlaySpeed FROM Team_Attributes WHERE buildUpPlaySpeedClass = 'Fast' ORDER BY buildUpPlaySpeed DESC LIMIT 4",
+      "gold_sql": "SELECT t1.buildUpPlaySpeed FROM Team_Attributes AS t1 INNER JOIN Team AS t2 ON t1.team_api_id = t2.team_api_id ORDER BY t1.buildUpPlaySpeed ASC LIMIT 4",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among the male patients who have a normal level of white blood cells, how many of them have an abnormal fibrinogen level?",
+      "pred_sql": "SELECT COUNT(DISTINCT p.ID) FROM main.Patient AS p JOIN main.Laboratory AS l ON p.ID = l.ID WHERE p.SEX = 'M' AND l.WBC BETWEEN 3.5 AND 9.0 AND (l.FG <= 150 OR l.FG >= 450) LIMIT 5000",
+      "gold_sql": "SELECT COUNT(DISTINCT T1.ID) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.FG <= 150 OR T2.FG >= 450 AND T2.WBC > 3.5 AND T2.WBC < 9.0 AND T1.SEX = 'M'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Tell the phone number of \"Carlo Jacobs\".",
+      "pred_sql": "SELECT NULL AS phone FROM main.member WHERE first_name = 'Carlo' AND last_name = 'Jacobs' LIMIT 5000",
+      "gold_sql": "SELECT phone FROM member WHERE first_name = 'Carlo' AND last_name = 'Jacobs'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among all the posts posted by the most influential user, identify the percentage with a score above 50.",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN p.Score > 50 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(p.Id) AS PercentageAbove50 FROM main.posts AS p JOIN main.users AS u ON p.OwnerUserId = u.Id WHERE u.DisplayName = 'user28' LIMIT 5000",
+      "gold_sql": "SELECT CAST(SUM(CASE WHEN T2.Score > 50 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.Id) FROM users T1 INNER JOIN posts T2 ON T1.Id = T2.OwnerUserId INNER JOIN ( SELECT MAX(Reputation) AS max_reputation FROM users ) T3 ON T1.Reputation = T3.max_reputation",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the complete address of the school with the lowest excellence rate? Indicate the Street, City, Zip and State.",
+      "pred_sql": "SELECT T1.Street, T1.City, T1.State, T1.Zip FROM main.schools AS T1 JOIN main.satscores AS T2 ON T1.CDSCode = T2.cds WHERE T2.rtype = 'D' AND T2.sname = 'Alameda' ORDER BY T2.NumGE1500 / T2.NumTstTakr ASC LIMIT 1",
+      "gold_sql": "SELECT T2.Street, T2.City, T2.State, T2.Zip FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY CAST(T1.NumGE1500 AS REAL) / T1.NumTstTakr ASC LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "The oldest SJS patient's medical laboratory work was completed on what date, and what age was the patient when they initially arrived at the hospital?",
+      "pred_sql": "SELECT MIN(Laboratory.Date) AS Oldest_SJS_Lab_Date, (STRFTIME('%Y', main.Patient.\"First Date\") - STRFTIME('%Y', main.Patient.Birthday)) AS Age_At_Arrival FROM main.Laboratory JOIN main.Patient ON main.Laboratory.ID = main.Patient.ID WHERE main.Patient.Diagnosis = 'SJS' LIMIT 1",
+      "gold_sql": "SELECT T1.Date, STRFTIME('%Y', T2.`First Date`) - STRFTIME('%Y', T2.Birthday),T2.Birthday FROM Laboratory AS T1 INNER JOIN Patient AS T2 ON T1.ID = T2.ID WHERE T2.Diagnosis = 'SJS' AND T2.Birthday IS NOT NULL ORDER BY T2.Birthday ASC LIMIT 1",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Among all the closed events, which event has the highest spend-to-budget ratio?",
+      "pred_sql": "SELECT e.event_name, b.category, b.spent, b.amount, (b.spent / b.amount) AS spend_to_budget_ratio FROM main.event AS e JOIN main.budget AS b ON e.link_to_event = b.link_to_event WHERE e.status = 'Closed' ORDER BY spend_to_budget_ratio DESC LIMIT 1",
+      "gold_sql": "SELECT T2.event_name FROM budget AS T1 INNER JOIN event AS T2 ON T1.link_to_event = T2.event_id WHERE T2.status = 'Closed' ORDER BY T1.spent / T1.amount DESC LIMIT 1",
+      "error": "no such column: e.link_to_event",
+      "category": "schema_linking"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What does the person with the phone number \"809-555-3360\" major in?",
+      "pred_sql": "SELECT T2.major_name \nFROM main.member AS T1 \nJOIN main.major AS T2 ON T1.link_to_major = T2.major_id \nWHERE T1.email LIKE '%809-555-3360%'",
+      "gold_sql": "SELECT T2.major_name FROM member AS T1 INNER JOIN major AS T2 ON T1.link_to_major = T2.major_id WHERE T1.phone = '809-555-3360'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "Was each expense in October Meeting on October 8, 2019 approved?",
+      "pred_sql": "SELECT e.expense_id, e.approved FROM main.expense AS e JOIN main.budget AS b ON e.link_to_budget = b.budget_id WHERE b.link_to_event IN (SELECT link_to_event FROM main.event WHERE event_name = 'October Meeting') AND e.expense_date = '2019-10-08' LIMIT 5000",
+      "gold_sql": "SELECT T3.approved FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "bird_mini_dev",
+      "question": "What is the best lap time recorded? List the driver and race with such recorded lap time.",
+      "pred_sql": "SELECT drivers.forename, drivers.surname, races.name FROM main.lapTimes JOIN main.drivers ON lapTimes.driverId = drivers.driverId JOIN main.races ON lapTimes.raceId = races.raceId WHERE lapTimes.milliseconds = (SELECT MIN(milliseconds) FROM main.lapTimes) LIMIT 1",
+      "gold_sql": "SELECT T2.milliseconds, T1.forename, T1.surname, T3.name FROM drivers AS T1 INNER JOIN lapTimes AS T2 ON T1.driverId = T2.driverId INNER JOIN races AS T3 ON T2.raceId = T3.raceId ORDER BY T2.milliseconds ASC LIMIT 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What acquisition channel produces customers with the highest average lifetime revenue?",
+      "pred_sql": "WITH customer_lifetime_revenue AS (SELECT m.channel, AVG(f.order_total) AS avg_ltv FROM main_marts.dim_customers AS d JOIN main_marts.fact_orders AS f ON d.customer_id = f.customer_id WHERE f.order_status = 'completed' GROUP BY m.channel) SELECT channel, avg_ltv FROM customer_lifetime_revenue ORDER BY avg_ltv DESC LIMIT 1",
+      "gold_sql": "SELECT c.acquisition_channel, AVG(m.lifetime_revenue) AS avg_revenue FROM main_marts.dim_customers c JOIN main_semantic.metric_customer_revenue m ON c.customer_id = m.customer_id GROUP BY c.acquisition_channel ORDER BY avg_revenue DESC LIMIT 1",
+      "error": "Binder Error: Referenced table \"m\" not found!\nCandidate tables: \"d\"\n\nLINE 1: ... = f.customer_id WHERE f.order_status = 'completed' GROUP BY m.channel) SELECT channel, avg_ltv FROM customer_lifetime_r...\n                                                                        ^",
+      "category": "schema_linking"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many completed orders came from customers in the South region?",
+      "pred_sql": "SELECT COUNT(*) AS completed_order_count FROM main_semantic.metric_customer_revenue AS mcr JOIN main_marts.dim_customers AS dc ON mcr.customer_id = dc.customer_id WHERE dc.region = 'South' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' AND c.region = 'South'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many customers do we have in A?",
+      "pred_sql": "SELECT COUNT(customer_id) AS customer_count FROM main_marts.dim_customers LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE state_code = 'C'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many new customers signed up each year?",
+      "pred_sql": "SELECT EXTRACT(YEAR FROM signup_date) AS year, COUNT(customer_id) AS new_customers FROM main_marts.dim_customers WHERE signup_date BETWEEN '2023-01-01' AND '2023-12-31' GROUP BY EXTRACT(YEAR FROM signup_date) ORDER BY year LIMIT 5000",
+      "gold_sql": "SELECT EXTRACT(year FROM signup_date) AS signup_year, COUNT(*) AS new_customers FROM main_marts.dim_customers GROUP BY 1 ORDER BY 1",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What are the top 3 regions by number of completed orders?",
+      "pred_sql": "SELECT region, completed_order_count FROM main_semantic.metric_customer_revenue ORDER BY completed_order_count DESC LIMIT 3",
+      "gold_sql": "SELECT c.region, COUNT(*) AS n FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' GROUP BY c.region ORDER BY n DESC LIMIT 3",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many customers have zero completed orders?",
+      "pred_sql": "SELECT COUNT(*) FROM main_semantic.metric_active_users WHERE is_active_30d = FALSE AND is_active_90d = FALSE LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_customer_revenue WHERE completed_order_count = 0",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many completed orders came from customers in the Northeast region?",
+      "pred_sql": "SELECT COUNT(*) AS completed_order_count FROM main_semantic.metric_customer_revenue AS mcr JOIN main_marts.dim_customers AS dc ON mcr.customer_id = dc.customer_id JOIN us_states AS uss ON dc.state_code = uss.state_code WHERE uss.region = 'Northeast' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' AND c.region = 'Northeast'",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is total revenue by quarter?",
+      "pred_sql": "WITH quarterly_revenue AS (SELECT d.quarter, SUM(r.revenue) AS total_revenue FROM main_semantic.metric_daily_revenue AS r JOIN main_marts.dim_date AS d ON r.order_date = d.date_day GROUP BY d.quarter) SELECT * FROM quarterly_revenue LIMIT 5000",
+      "gold_sql": "SELECT date_trunc('quarter', order_date)::date AS quarter, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY 1 ORDER BY 1",
+      "error": null,
+      "category": "date_logic"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many customers do we have in O?",
+      "pred_sql": "SELECT COUNT(*) AS customer_count FROM main_marts.dim_customers WHERE acquisition_channel = 'organic' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE state_code = 'C'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is the gap between order_total and the sum of amount_collected for completed orders?",
+      "pred_sql": "SELECT order_id, order_total, amount_collected, order_total - amount_collected AS gap FROM main_marts.fact_orders WHERE order_status = 'completed' LIMIT 5000",
+      "gold_sql": "SELECT SUM(order_total) - SUM(amount_collected) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+      "error": null,
+      "category": "aggregation_grain"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is average revenue per order by day of week?",
+      "pred_sql": "WITH daily_revenue_with_day AS (SELECT mdr.order_date, STRFTIME('%w', mdr.order_date) AS day_of_week, AVG(mdr.avg_order_value) AS avg_revenue_per_order FROM main_semantic.metric_daily_revenue AS mdr GROUP BY mdr.order_date) SELECT day_of_week, AVG(avg_revenue_per_order) AS avg_revenue_per_order_by_day FROM daily_revenue_with_day GROUP BY day_of_week ORDER BY day_of_week LIMIT 5000",
+      "gold_sql": "SELECT d.day_name, AVG(o.order_total) AS avg_revenue FROM main_marts.fact_orders o JOIN main_marts.dim_date d ON o.order_date = d.date_day WHERE o.order_status = 'completed' GROUP BY d.day_name, d.day_of_week ORDER BY d.day_of_week",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "Who are the bottom 5 customers by lifetime revenue (with at least one completed order)?",
+      "pred_sql": "SELECT customer_id, full_name, state_code, state_name, region, completed_order_count, lifetime_revenue, revenue_last_90d, revenue_last_365d, last_order_date FROM main_semantic.metric_customer_revenue WHERE completed_order_count > 0 ORDER BY lifetime_revenue ASC LIMIT 5",
+      "gold_sql": "SELECT customer_id, full_name, lifetime_revenue FROM main_semantic.metric_customer_revenue WHERE completed_order_count > 0 ORDER BY lifetime_revenue ASC LIMIT 5",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many completed orders happened in Q1 of any year?",
+      "pred_sql": "SELECT COUNT(order_id) AS completed_order_count FROM main_marts.fact_orders JOIN main_marts.dim_date ON main_marts.fact_orders.order_date = main_marts.dim_date.date_day WHERE main_marts.fact_orders.order_status = 'completed' AND main_marts.dim_date.quarter = 'Q1' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_date d ON o.order_date = d.date_day WHERE o.order_status = 'completed' AND d.quarter = 1",
+      "error": "Conversion Error: Could not convert string 'Q1' to INT64\n\nLINE 1: ....order_status = 'completed' AND main_marts.dim_date.quarter = 'Q1' LIMIT 5000\n                                                                         ^",
+      "category": "date_logic"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is total revenue per completed order, joined with its line items, without double-counting the order total?",
+      "pred_sql": "SELECT o.order_id, o.customer_id, o.store_id, o.order_date, o.channel, o.currency, o.item_count, o.unit_count, o.order_total, o.payment_count, o.amount_collected, oi.order_item_id, oi.product_id, oi.quantity, oi.extended_price FROM main_marts.fact_orders AS o JOIN main_marts.fact_order_items AS oi ON o.order_id = oi.order_id WHERE o.order_status = 'completed' LIMIT 5000",
+      "gold_sql": "SELECT o.order_id, o.order_total FROM main_marts.fact_orders o WHERE o.order_status = 'completed' LIMIT 20",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What are the 5 lowest-margin products currently active?",
+      "pred_sql": "WITH active_products AS (SELECT p.product_id, p.product_name, p.category, p.subcategory, p.brand, p.unit_cost, p.list_price, p.unit_margin, p.margin_pct FROM main_marts.dim_products AS p WHERE p.is_active = TRUE), active_sales AS (SELECT mp.product_id, mp.units_sold, mp.revenue, mp.gross_profit FROM main_semantic.metric_product_performance AS mp WHERE mp.order_status = 'completed') SELECT ap.product_id, ap.product_name, ap.category, ap.subcategory, ap.brand, ap.unit_cost, ap.list_price, ap.unit_margin, ap.margin_pct, asa.units_sold, asa.revenue, asa.gross_profit FROM active_products AS ap JOIN active_sales AS asa ON ap.product_id = asa.product_id ORDER BY ap.margin_pct ASC LIMIT 5",
+      "gold_sql": "SELECT product_name, margin_pct FROM main_marts.dim_products WHERE is_active = true ORDER BY margin_pct ASC LIMIT 5",
+      "error": "Binder Error: Values list \"mp\" does not have a column named \"order_status\"\n\nLINE 1: ... FROM main_semantic.metric_product_performance AS mp WHERE mp.order_status = 'completed') SELECT ap.product_id, ap...\n                                                                      ^",
+      "category": "schema_linking"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is total quantity of units sold per product category, at the line-item grain?",
+      "pred_sql": "WITH product_units AS (SELECT mp.category AS product_category, SUM(foi.quantity) AS total_units_sold FROM main_semantic.metric_product_performance AS mp JOIN main_marts.fact_order_items AS foi ON mp.product_id = foi.product_id GROUP BY mp.category) SELECT product_category, total_units_sold FROM product_units WHERE total_units_sold > 0 LIMIT 5000",
+      "gold_sql": "SELECT p.category, SUM(oi.quantity) AS units FROM main_marts.fact_order_items oi JOIN main_marts.dim_products p ON oi.product_id = p.product_id WHERE oi.order_status = 'completed' GROUP BY p.category ORDER BY units DESC",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What was total revenue across all channels on the single busiest day?",
+      "pred_sql": "SELECT MAX(revenue) AS max_revenue FROM main_semantic.metric_daily_revenue WHERE order_date IN (SELECT order_date FROM main_semantic.metric_daily_revenue ORDER BY order_count DESC LIMIT 1) LIMIT 5000",
+      "gold_sql": "SELECT order_date, SUM(revenue) AS revenue FROM main_semantic.metric_daily_revenue GROUP BY order_date ORDER BY revenue DESC LIMIT 1",
+      "error": null,
+      "category": "aggregation_grain"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "Which sales channel has the highest average order value?",
+      "pred_sql": "SELECT channel, AVG(revenue) AS avg_order_value FROM main_semantic.metric_daily_revenue WHERE channel = 'retail' GROUP BY channel ORDER BY avg_order_value DESC LIMIT 1",
+      "gold_sql": "SELECT channel, AVG(order_total) AS avg_order_value FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY channel ORDER BY avg_order_value DESC LIMIT 1",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is month-over-month revenue for the last 6 months with data?",
+      "pred_sql": "WITH monthly_revenue AS (SELECT d.month_name, d.region, dr.revenue FROM main_semantic.metric_daily_revenue AS dr JOIN main_marts.dim_date AS d ON dr.order_date = d.date_day WHERE d.month_name IN ('January', 'February', 'March', 'April', 'May', 'June') AND dr.channel = 'online') SELECT month_name, region, revenue, LAG(revenue) OVER (PARTITION BY region ORDER BY month_name) AS prev_month_revenue, revenue - LAG(revenue) OVER (PARTITION BY region ORDER BY month_name) AS month_over_month_change FROM monthly_revenue ORDER BY month_name, region LIMIT 5000",
+      "gold_sql": "SELECT date_trunc('month', order_date)::date AS month, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY 1 ORDER BY 1 DESC LIMIT 6",
+      "error": "Binder Error: Table \"d\" does not have a column named \"region\"\n\nCandidate bindings: : \"month\"\n\nLINE 1: WITH monthly_revenue AS (SELECT d.month_name, d.region, dr.revenue FROM main_semantic.metric_daily_revenue...\n                                                      ^",
+      "category": "schema_linking"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What are the top 5 products by units sold?",
+      "pred_sql": "SELECT product_id, product_name, category, subcategory, brand, order_count, units_sold, revenue, gross_profit FROM main_semantic.metric_product_performance ORDER BY units_sold DESC LIMIT 5",
+      "gold_sql": "SELECT product_name, units_sold FROM main_semantic.metric_product_performance ORDER BY units_sold DESC LIMIT 5",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is total amount collected by payment method?",
+      "pred_sql": "SELECT payment_method, SUM(amount) AS total_amount_collected FROM main_marts.fact_payments GROUP BY payment_method LIMIT 5000",
+      "gold_sql": "SELECT payment_method, SUM(amount) AS total_collected FROM main_marts.fact_payments WHERE payment_status = 'succeeded' GROUP BY payment_method ORDER BY total_collected DESC",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What percentage of customers are in the West region?",
+      "pred_sql": "WITH west_region_customers AS (SELECT COUNT(*) AS west_count FROM main_semantic.metric_customer_revenue AS mcr JOIN main_marts.dim_customers AS dc ON mcr.customer_id = dc.customer_id WHERE dc.state_code IN ('AK', 'AZ', 'CA', 'CO', 'HI', 'ID', 'MT', 'NE', 'NM', 'NV', 'OR', 'UT', 'WA')) SELECT CAST(west_count AS REAL) * 100 / (SELECT COUNT(*) FROM main_semantic.metric_customer_revenue) AS west_percentage FROM west_region_customers LIMIT 5000",
+      "gold_sql": "SELECT 100.0 * COUNT(*) FILTER (WHERE region = 'West') / COUNT(*) FROM main_marts.dim_customers",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many completed orders were placed in 2023?",
+      "pred_sql": "SELECT COUNT(*) AS completed_order_count FROM main_marts.fact_order_items WHERE order_date BETWEEN '2023-01-01' AND '2023-12-31' AND order_status = 'completed' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND EXTRACT(year FROM order_date) = 2023",
+      "error": null,
+      "category": "date_logic"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What are the top 5 products by gross profit?",
+      "pred_sql": "SELECT product_id, product_name, category, subcategory, brand, order_count, units_sold, revenue, gross_profit FROM main_semantic.metric_product_performance ORDER BY gross_profit DESC LIMIT 5",
+      "gold_sql": "SELECT product_name, gross_profit FROM main_semantic.metric_product_performance ORDER BY gross_profit DESC LIMIT 5",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many marketing campaigns have we run?",
+      "pred_sql": "SELECT COUNT(DISTINCT campaign_id) AS campaign_count FROM main_marts.fact_campaign_touches LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_campaign_touches",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What percentage of payments were refunded?",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN payment_status = 'refunded' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(payment_id) AS refund_percentage FROM main_marts.fact_payments WHERE payment_status = 'refunded' LIMIT 5000",
+      "gold_sql": "SELECT 100.0 * COUNT(*) FILTER (WHERE payment_status = 'refunded') / COUNT(*) FROM main_marts.fact_payments",
+      "error": null,
+      "category": "aggregation_grain"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is the average order value across all completed orders?",
+      "pred_sql": "SELECT AVG(avg_order_value) AS average_order_value FROM main_semantic.metric_daily_revenue LIMIT 5000",
+      "gold_sql": "SELECT AVG(order_total) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What was total revenue in the most recent full month?",
+      "pred_sql": "WITH latest_month AS (SELECT MAX(order_date) AS max_date FROM main_semantic.metric_daily_revenue WHERE order_date >= DATE_TRUNC('MONTH', CURRENT_DATE)), previous_month AS (SELECT DATE_TRUNC('MONTH', max_date) - INTERVAL '1' MONTH AS prev_max_date FROM latest_month) SELECT SUM(revenue) AS total_revenue FROM main_semantic.metric_daily_revenue AS mdr JOIN previous_month AS pm ON mdr.order_date = pm.prev_max_date WHERE mdr.order_status = 'completed' LIMIT 5000",
+      "gold_sql": "SELECT date_trunc('month', order_date)::date AS month, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY 1 ORDER BY 1 DESC LIMIT 1",
+      "error": "Binder Error: Values list \"mdr\" does not have a column named \"order_status\"\n\nLINE 1: ...ous_month AS pm ON mdr.order_date = pm.prev_max_date WHERE mdr.order_status = 'completed' LIMIT 5000\n                                                                      ^",
+      "category": "schema_linking"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "For each customer, what is their average number of items per completed order?",
+      "pred_sql": "WITH customer_order_items AS (SELECT mcr.customer_id, AVG(foi.quantity) AS avg_items_per_order FROM main_semantic.metric_customer_revenue AS mcr JOIN main_marts.fact_order_items AS foi ON mcr.customer_id = foi.customer_id WHERE foi.order_status = 'completed' GROUP BY mcr.customer_id) SELECT customer_id, avg_items_per_order FROM customer_order_items LIMIT 5000",
+      "gold_sql": "SELECT customer_id, AVG(item_count) AS avg_items_per_order FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY customer_id ORDER BY avg_items_per_order DESC LIMIT 10",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is the conversion rate (conversions / total touches) by campaign channel?",
+      "pred_sql": "WITH conversion_counts AS (SELECT t.campaign_channel, COUNT(*) AS conversion_count FROM main_marts.fact_campaign_touches AS t WHERE t.touch_type = 'conversion' GROUP BY t.campaign_channel), total_touches AS (SELECT t.campaign_channel, COUNT(*) AS total_touch_count FROM main_marts.fact_campaign_touches AS t GROUP BY t.campaign_channel) SELECT cc.campaign_channel, cc.conversion_count, tt.total_touch_count, CAST(cc.conversion_count AS REAL) / NULLIF(tt.total_touch_count, 0) AS conversion_rate FROM conversion_counts AS cc JOIN total_touches AS tt ON cc.campaign_channel = tt.campaign_channel LIMIT 5000",
+      "gold_sql": "SELECT campaign_channel, 100.0 * COUNT(*) FILTER (WHERE touch_type = 'conversion') / COUNT(*) AS conversion_rate_pct FROM main_marts.fact_campaign_touches GROUP BY campaign_channel ORDER BY conversion_rate_pct DESC",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many completed orders came from customers in the Midwest region?",
+      "pred_sql": "SELECT COUNT(*) AS completed_order_count FROM main_semantic.metric_customer_revenue AS mcr JOIN main_marts.dim_customers AS dc ON mcr.customer_id = dc.customer_id WHERE dc.region = 'Midwest' LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' AND c.region = 'Midwest'",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is the total revenue trend by month for the current year?",
+      "pred_sql": "WITH monthly_revenue AS (SELECT d.date_day, d.month_name, SUM(mdr.revenue) AS total_revenue FROM main_semantic.metric_daily_revenue AS mdr JOIN main_marts.dim_date AS d ON mdr.order_date = d.date_day WHERE d.year = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY d.date_day, d.month_name) SELECT month_name, SUM(total_revenue) AS total_monthly_revenue FROM monthly_revenue GROUP BY month_name ORDER BY month_name LIMIT 5000",
+      "gold_sql": "SELECT date_trunc('month', order_date)::date AS month, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' AND EXTRACT(year FROM order_date) = EXTRACT(year FROM current_date) GROUP BY 1 ORDER BY 1",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is the average lifetime completed order count per active customer?",
+      "pred_sql": "SELECT AVG(lifetime_completed_orders) AS avg_lifetime_completed_orders FROM main_semantic.metric_active_users JOIN main_semantic.metric_customer_revenue ON main_semantic.metric_active_users.customer_id = main_semantic.metric_customer_revenue.customer_id WHERE is_active_30d = TRUE LIMIT 5000",
+      "gold_sql": "SELECT AVG(lifetime_completed_orders) FROM main_semantic.metric_active_users WHERE is_active_90d = true",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "Which product generates the most revenue?",
+      "pred_sql": "SELECT product_name, revenue FROM main_semantic.metric_product_performance ORDER BY revenue DESC LIMIT 1",
+      "gold_sql": "SELECT product_id, product_name, revenue FROM main_semantic.metric_product_performance ORDER BY revenue DESC LIMIT 1",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "How many customers signed up but have never placed a completed order?",
+      "pred_sql": "SELECT COUNT(*) FROM main_semantic.metric_active_users AS ma JOIN main_marts.dim_customers AS dc ON ma.customer_id = dc.customer_id WHERE ma.is_active_30d = FALSE AND ma.is_active_90d = FALSE LIMIT 5000",
+      "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_active_users WHERE lifetime_completed_orders = 0",
+      "error": null,
+      "category": "join_path"
+    },
+    {
+      "source": "own_warehouse",
+      "question": "What is the average discount percentage applied across all order line items?",
+      "pred_sql": "SELECT AVG(discount_pct) AS avg_discount_pct FROM main_marts.fact_order_items LIMIT 5000",
+      "gold_sql": "SELECT AVG(discount_pct) FROM main_marts.fact_order_items WHERE discount_pct > 0",
+      "error": null,
+      "category": "ambiguity_external_knowledge"
+    }
+  ]
+}
