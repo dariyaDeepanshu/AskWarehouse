@@ -1,0 +1,28 @@
+# AskWarehouse dependencies
+# torch / transformers / accelerate are inherited from the system site-packages
+# (venv created with --system-site-packages) to reuse the CUDA 12.9-matched
+# install already present on this machine instead of re-downloading ~5GB wheels.
+
+duckdb>=1.1.0
+dbt-core>=1.8
+dbt-duckdb>=1.8
+
+sentence-transformers>=3.0
+sqlglot>=25.0
+bitsandbytes>=0.43
+
+faker>=26.0
+numpy>=1.26
+pandas>=2.2
+
+streamlit>=1.37
+fastapi>=0.112
+uvicorn>=0.30
+
+datasets>=2.20
+huggingface_hub>=0.24
+
+matplotlib>=3.9
+pydantic>=2.8
+python-dotenv>=1.0
+tqdm>=4.66
