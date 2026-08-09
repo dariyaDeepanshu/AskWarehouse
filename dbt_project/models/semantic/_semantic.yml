@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: metric_customer_revenue
+    description: "Semantic layer view. Canonical customer-grain 'revenue' metric: sum of order_total from orders with order_status = 'completed' only (cancelled/returned/pending excluded). Use this instead of re-deriving revenue from fact_orders when a question asks for revenue, spend, or 'top customers by revenue'."
+    columns:
+      - name: customer_id
+        description: "FK to dim_customers.customer_id."
+      - name: lifetime_revenue
+        description: "Total completed-order revenue for this customer across all time, in USD. THE canonical definition of customer revenue."
+      - name: revenue_last_90d
+        description: "Completed-order revenue in the trailing 90 days from today, in USD."
+      - name: revenue_last_365d
+        description: "Completed-order revenue in the trailing 365 days from today, in USD."
+      - name: completed_order_count
+        description: "Number of completed orders placed by this customer."
+      - name: last_order_date
+        description: "Date of the customer's most recent completed order."
+
+  - name: metric_daily_revenue
+    description: "Semantic layer view. Canonical daily revenue by channel: completed orders only, grain = (order_date, channel)."
+    columns:
+      - name: order_date
+        description: "Calendar date of the orders being summarized."
+      - name: channel
+        description: "Sales channel: online, retail, or marketplace."
+      - name: revenue
+        description: "Total completed-order revenue on this date/channel, in USD."
+      - name: order_count
+        description: "Number of distinct completed orders on this date/channel."
+      - name: avg_order_value
+        description: "revenue / order_count for this date/channel, in USD."
+
+  - name: metric_active_users
+    description: "Semantic layer view. Canonical 'active_user' definition: a customer is active_30d / active_90d if they placed at least one completed order within that trailing window from today."
+    columns:
+      - name: customer_id
+        description: "FK to dim_customers.customer_id."
+      - name: is_active_30d
+        description: "Boolean. True if the customer placed >=1 completed order in the trailing 30 days. THE canonical definition of a 30-day active user."
+      - name: is_active_90d
+        description: "Boolean. True if the customer placed >=1 completed order in the trailing 90 days. THE canonical definition of a 90-day active user."
+      - name: last_completed_order_date
+        description: "Date of the customer's most recent completed order, null if they have none."
+      - name: lifetime_completed_orders
+        description: "Total count of completed orders ever placed by this customer."
+
+  - name: metric_product_performance
+    description: "Semantic layer view. Canonical product-grain sales metrics from completed orders: revenue, units_sold, gross_profit, and a distinct order_count (so 'orders containing this product' and 'units sold' can't be confused)."
+    columns:
+      - name: product_id
+        description: "FK to dim_products.product_id."
+      - name: revenue
+        description: "Total completed-order revenue for this product, in USD."
+      - name: units_sold
+        description: "Total quantity of this product sold across completed orders."
+      - name: order_count
+        description: "Number of distinct completed orders that contained this product. Not the same as units_sold if orders bought multiple units."
+      - name: gross_profit
+        description: "Estimated gross profit for this product across completed orders, in USD."

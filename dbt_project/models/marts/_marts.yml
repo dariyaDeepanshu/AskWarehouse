@@ -1,0 +1,208 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "One row per customer. Grain: customer_id. Contains demographic and acquisition attributes; does not contain order history (see fact_orders / metric_customer_revenue)."
+    columns:
+      - name: customer_id
+        description: "Primary key. Surrogate integer customer identifier."
+        tests: [unique, not_null]
+      - name: full_name
+        description: "Customer's full display name (first + last)."
+      - name: email
+        description: "PII. Customer email address."
+      - name: phone
+        description: "PII. Customer phone number; null for ~15% of customers (not collected at signup)."
+      - name: city
+        description: "Customer's home city (free text)."
+      - name: state_code
+        description: "Customer's home US state as a 2-letter USPS abbreviation, e.g. 'CA', 'NY', 'TX'. Sample values: CA, TX, NY, FL, WA."
+      - name: state_name
+        description: "Full US state name, e.g. 'California', 'New York'. Joined in from the us_states reference. Sample values: California, Texas, New York."
+      - name: region
+        description: "US census region derived from state: Northeast, South, Midwest, or West."
+      - name: country
+        description: "Customer's country. Sample values: US, CA, MX. Vast majority are US."
+      - name: signup_date
+        description: "Date the customer created their account (normalized from a source system that mixed two date formats)."
+      - name: birth_date
+        description: "PII. Customer date of birth; null for ~8% of customers."
+      - name: age_years
+        description: "Customer age in years, derived from birth_date. Null where birth_date is null."
+      - name: is_marketing_opt_in
+        description: "Boolean. Whether the customer opted into marketing communications."
+      - name: acquisition_channel
+        description: "How the customer was acquired. One of: organic, paid_search, paid_social, email, referral, affiliate."
+
+  - name: dim_products
+    description: "One row per product (SKU). Grain: product_id."
+    columns:
+      - name: product_id
+        description: "Primary key."
+        tests: [unique, not_null]
+      - name: sku
+        description: "Stock keeping unit code."
+      - name: product_name
+        description: "Product display name."
+      - name: category
+        description: "Top-level product category. Sample values: Electronics, Apparel, Home & Kitchen, Beauty, Sports & Outdoors, Toys & Games, Grocery."
+      - name: subcategory
+        description: "Second-level category, specific to the parent category (e.g. Laptops under Electronics)."
+      - name: brand
+        description: "Product brand name."
+      - name: unit_cost
+        description: "Wholesale cost to the business per unit, in USD."
+      - name: list_price
+        description: "Catalog list price per unit before any line-item discount, in USD."
+      - name: unit_margin
+        description: "list_price minus unit_cost, in USD."
+      - name: margin_pct
+        description: "(list_price - unit_cost) / list_price, as a fraction."
+      - name: is_active
+        description: "Boolean. Whether the product is currently sellable."
+      - name: launch_date
+        description: "Date the product was first listed."
+
+  - name: dim_stores
+    description: "One row per store/channel location. Grain: store_id."
+    columns:
+      - name: store_id
+        description: "Primary key."
+        tests: [unique, not_null]
+      - name: store_name
+        description: "Store display name."
+      - name: channel
+        description: "Sales channel for this store. One of: online, retail, marketplace."
+      - name: state_code
+        description: "Store's US state, 2-letter USPS abbreviation."
+      - name: region
+        description: "US census region derived from state."
+
+  - name: dim_date
+    description: "Date spine covering the full order history range, one row per calendar day. Grain: date_day. Join target for time-intelligence questions (weekday, quarter, month name)."
+    columns:
+      - name: date_day
+        description: "Calendar date, primary key."
+        tests: [unique, not_null]
+      - name: year
+        description: "Calendar year."
+      - name: quarter
+        description: "Calendar quarter, 1-4."
+      - name: month
+        description: "Calendar month number, 1-12."
+      - name: month_name
+        description: "Full month name, e.g. 'January'."
+      - name: is_weekend
+        description: "Boolean. True for Saturday/Sunday."
+      - name: month_start
+        description: "First day of the month containing date_day."
+      - name: quarter_start
+        description: "First day of the quarter containing date_day."
+
+  - name: fact_orders
+    description: "One row per order (order header grain). Pre-aggregates item_count and order_total from order lines so revenue-by-X questions don't need to join down to fact_order_items and risk fan-out double-counting. FK to dim_customers, dim_stores, dim_date."
+    columns:
+      - name: order_id
+        description: "Primary key."
+        tests: [unique, not_null]
+      - name: customer_id
+        description: "FK to dim_customers.customer_id."
+        tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: store_id
+        description: "FK to dim_stores.store_id."
+        tests:
+          - relationships:
+              to: ref('dim_stores')
+              field: store_id
+      - name: order_date
+        description: "Date the order was placed. FK to dim_date.date_day."
+      - name: order_status
+        description: "Order lifecycle status. One of: completed, cancelled, returned, pending. Revenue metrics should filter to order_status = 'completed' -- see metric_customer_revenue / metric_daily_revenue for the canonical definition."
+      - name: channel
+        description: "Sales channel the order was placed through (inherited from the store)."
+      - name: item_count
+        description: "Number of distinct order_item rows on this order (line count, not unit count)."
+      - name: unit_count
+        description: "Total quantity of units across all line items on this order."
+      - name: order_total
+        description: "Sum of extended_price across this order's line items, in USD. This is the order-grain revenue figure -- do not also sum fact_order_items.extended_price for the same order or revenue will be double counted."
+      - name: payment_count
+        description: "Number of payment attempts recorded against this order."
+      - name: amount_collected
+        description: "Sum of successful payment amounts for this order, in USD. May differ from order_total for partial/failed payments."
+
+  - name: fact_order_items
+    description: "One row per order line item (order_id, product_id can repeat). Grain: order_item_id. Use this table only when the question needs product-level or line-item detail -- for order-level or customer-level revenue, use fact_orders or metric_customer_revenue instead to avoid double-counting from the 1:many order-to-item relationship."
+    columns:
+      - name: order_item_id
+        description: "Primary key."
+        tests: [unique, not_null]
+      - name: order_id
+        description: "FK to fact_orders.order_id. Not unique -- an order can have many line items."
+        tests:
+          - relationships:
+              to: ref('fact_orders')
+              field: order_id
+      - name: product_id
+        description: "FK to dim_products.product_id."
+        tests:
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+      - name: customer_id
+        description: "FK to dim_customers.customer_id (denormalized from the parent order)."
+      - name: order_date
+        description: "Date of the parent order."
+      - name: order_status
+        description: "Status of the parent order. Filter to 'completed' for realized revenue."
+      - name: quantity
+        description: "Units of this product on this line item."
+      - name: unit_price
+        description: "Price per unit actually charged (after any discount), in USD."
+      - name: extended_price
+        description: "quantity * unit_price for this line item, in USD."
+      - name: estimated_gross_profit
+        description: "Estimated profit on this line item after allocating product cost, in USD."
+
+  - name: fact_payments
+    description: "One row per payment attempt. An order can have more than one payment row (retries, partial payments)."
+    columns:
+      - name: payment_id
+        description: "Primary key."
+        tests: [unique, not_null]
+      - name: order_id
+        description: "FK to fact_orders.order_id."
+        tests:
+          - relationships:
+              to: ref('fact_orders')
+              field: order_id
+      - name: payment_method
+        description: "One of: credit_card, paypal, gift_card, bank_transfer, buy_now_pay_later."
+      - name: amount
+        description: "Payment amount, in USD."
+      - name: payment_status
+        description: "One of: succeeded, failed, refunded."
+
+  - name: fact_campaign_touches
+    description: "One row per marketing touchpoint between a customer and a campaign (impression, click, or conversion)."
+    columns:
+      - name: touch_id
+        description: "Primary key."
+        tests: [unique, not_null]
+      - name: customer_id
+        description: "FK to dim_customers.customer_id."
+        tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: campaign_id
+        description: "FK to the campaign."
+      - name: campaign_name
+        description: "Campaign display name."
+      - name: campaign_channel
+        description: "Marketing channel for the campaign. One of: email, paid_social, search, display, influencer."
+      - name: touch_type
+        description: "One of: impression, click, conversion."

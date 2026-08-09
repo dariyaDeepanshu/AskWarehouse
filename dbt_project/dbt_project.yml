@@ -1,0 +1,22 @@
+name: 'askwarehouse'
+version: '1.0.0'
+config-version: 2
+
+profile: 'askwarehouse'
+
+model-paths: ["models"]
+target-path: "target"
+log-path: "logs"
+clean-targets: ["target"]
+
+models:
+  askwarehouse:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts
+    semantic:
+      +materialized: view
+      +schema: semantic

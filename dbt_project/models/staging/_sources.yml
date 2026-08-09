@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: customers
+      - name: products
+      - name: stores
+      - name: campaigns
+      - name: orders
+      - name: order_items
+      - name: payments
+      - name: customer_campaign_touch

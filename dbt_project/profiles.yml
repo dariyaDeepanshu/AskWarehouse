@@ -1,0 +1,7 @@
+askwarehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: '../data/warehouse/warehouse.duckdb'
+      threads: 4
