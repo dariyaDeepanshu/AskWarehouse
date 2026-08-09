@@ -1,0 +1,1129 @@
+[
+  {
+    "id": 1,
+    "question": "How many customers do we have in total?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 2,
+    "question": "How many products are currently active?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_products WHERE is_active = true",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 3,
+    "question": "How many stores do we operate?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_stores",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 4,
+    "question": "How many orders have been placed in total?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 5,
+    "question": "How many completed orders have we had?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 6,
+    "question": "How many orders were cancelled?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'cancelled'",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 7,
+    "question": "How many marketing campaigns have we run?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_campaign_touches",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 8,
+    "question": "How many distinct product categories do we sell?",
+    "gold_sql": "SELECT COUNT(DISTINCT category) FROM main_marts.dim_products",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count(DISTINCT category)"
+    ]
+  },
+  {
+    "id": 9,
+    "question": "What is the average order value across all completed orders?",
+    "gold_sql": "SELECT AVG(order_total) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "avg(order_total)"
+    ]
+  },
+  {
+    "id": 10,
+    "question": "What is the total number of units sold across all completed orders?",
+    "gold_sql": "SELECT SUM(unit_count) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+    "tag": "basic_count",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(unit_count)"
+    ]
+  },
+  {
+    "id": 11,
+    "question": "What is our total lifetime revenue across all customers?",
+    "gold_sql": "SELECT SUM(lifetime_revenue) FROM main_semantic.metric_customer_revenue",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(lifetime_revenue)"
+    ]
+  },
+  {
+    "id": 12,
+    "question": "Who are the top 10 customers by lifetime revenue?",
+    "gold_sql": "SELECT customer_id, full_name, lifetime_revenue FROM main_semantic.metric_customer_revenue ORDER BY lifetime_revenue DESC LIMIT 10",
+    "tag": "semantic_revenue",
+    "gold_row_count": 10,
+    "gold_columns": [
+      "customer_id",
+      "full_name",
+      "lifetime_revenue"
+    ]
+  },
+  {
+    "id": 13,
+    "question": "What is total revenue in the last 90 days?",
+    "gold_sql": "SELECT SUM(revenue_last_90d) FROM main_semantic.metric_customer_revenue",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(revenue_last_90d)"
+    ]
+  },
+  {
+    "id": 14,
+    "question": "What is total revenue in the last 365 days?",
+    "gold_sql": "SELECT SUM(revenue_last_365d) FROM main_semantic.metric_customer_revenue",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(revenue_last_365d)"
+    ]
+  },
+  {
+    "id": 15,
+    "question": "What is total revenue by region?",
+    "gold_sql": "SELECT region, SUM(lifetime_revenue) AS revenue FROM main_semantic.metric_customer_revenue GROUP BY region ORDER BY revenue DESC",
+    "tag": "semantic_revenue",
+    "gold_row_count": 4,
+    "gold_columns": [
+      "region",
+      "revenue"
+    ]
+  },
+  {
+    "id": 16,
+    "question": "Which region generates the most revenue?",
+    "gold_sql": "SELECT region, SUM(lifetime_revenue) AS revenue FROM main_semantic.metric_customer_revenue GROUP BY region ORDER BY revenue DESC LIMIT 1",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "region",
+      "revenue"
+    ]
+  },
+  {
+    "id": 17,
+    "question": "What is the average lifetime revenue per customer?",
+    "gold_sql": "SELECT AVG(lifetime_revenue) FROM main_semantic.metric_customer_revenue",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "avg(lifetime_revenue)"
+    ]
+  },
+  {
+    "id": 18,
+    "question": "How many customers have zero completed orders?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_customer_revenue WHERE completed_order_count = 0",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 19,
+    "question": "What is total daily revenue trend for the online channel?",
+    "gold_sql": "SELECT order_date, revenue FROM main_semantic.metric_daily_revenue WHERE channel = 'online' ORDER BY order_date",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1461,
+    "gold_columns": [
+      "order_date",
+      "revenue"
+    ]
+  },
+  {
+    "id": 20,
+    "question": "What is the average order value by channel?",
+    "gold_sql": "SELECT channel, AVG(avg_order_value) AS avg_order_value FROM main_semantic.metric_daily_revenue GROUP BY channel ORDER BY avg_order_value DESC",
+    "tag": "semantic_revenue",
+    "gold_row_count": 3,
+    "gold_columns": [
+      "channel",
+      "avg_order_value"
+    ]
+  },
+  {
+    "id": 21,
+    "question": "What was total revenue across all channels on the single busiest day?",
+    "gold_sql": "SELECT order_date, SUM(revenue) AS revenue FROM main_semantic.metric_daily_revenue GROUP BY order_date ORDER BY revenue DESC LIMIT 1",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "order_date",
+      "revenue"
+    ]
+  },
+  {
+    "id": 22,
+    "question": "How many customers have generated more than $10,000 in lifetime revenue?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_customer_revenue WHERE lifetime_revenue > 10000",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 23,
+    "question": "What is total lifetime revenue from customers in K?",
+    "gold_sql": "SELECT SUM(lifetime_revenue) FROM main_semantic.metric_customer_revenue WHERE state_code = 'A'",
+    "tag": "semantic_revenue_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(lifetime_revenue)"
+    ]
+  },
+  {
+    "id": 24,
+    "question": "What is total lifetime revenue from customers in L?",
+    "gold_sql": "SELECT SUM(lifetime_revenue) FROM main_semantic.metric_customer_revenue WHERE state_code = 'A'",
+    "tag": "semantic_revenue_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(lifetime_revenue)"
+    ]
+  },
+  {
+    "id": 25,
+    "question": "What is total lifetime revenue from customers in R?",
+    "gold_sql": "SELECT SUM(lifetime_revenue) FROM main_semantic.metric_customer_revenue WHERE state_code = 'A'",
+    "tag": "semantic_revenue_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(lifetime_revenue)"
+    ]
+  },
+  {
+    "id": 26,
+    "question": "What is the median completed order count per customer?",
+    "gold_sql": "SELECT MEDIAN(completed_order_count) FROM main_semantic.metric_customer_revenue",
+    "tag": "semantic_revenue",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "median(completed_order_count)"
+    ]
+  },
+  {
+    "id": 27,
+    "question": "Which product generates the most revenue?",
+    "gold_sql": "SELECT product_id, product_name, revenue FROM main_semantic.metric_product_performance ORDER BY revenue DESC LIMIT 1",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "product_id",
+      "product_name",
+      "revenue"
+    ]
+  },
+  {
+    "id": 28,
+    "question": "What are the top 5 products by units sold?",
+    "gold_sql": "SELECT product_name, units_sold FROM main_semantic.metric_product_performance ORDER BY units_sold DESC LIMIT 5",
+    "tag": "product_performance",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "product_name",
+      "units_sold"
+    ]
+  },
+  {
+    "id": 29,
+    "question": "What are the top 5 products by gross profit?",
+    "gold_sql": "SELECT product_name, gross_profit FROM main_semantic.metric_product_performance ORDER BY gross_profit DESC LIMIT 5",
+    "tag": "product_performance",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "product_name",
+      "gross_profit"
+    ]
+  },
+  {
+    "id": 30,
+    "question": "What is total revenue from the Apparel category?",
+    "gold_sql": "SELECT SUM(revenue) FROM main_semantic.metric_product_performance WHERE category = 'Apparel'",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(revenue)"
+    ]
+  },
+  {
+    "id": 31,
+    "question": "What is total revenue from the Beauty category?",
+    "gold_sql": "SELECT SUM(revenue) FROM main_semantic.metric_product_performance WHERE category = 'Beauty'",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(revenue)"
+    ]
+  },
+  {
+    "id": 32,
+    "question": "What is total revenue from the Electronics category?",
+    "gold_sql": "SELECT SUM(revenue) FROM main_semantic.metric_product_performance WHERE category = 'Electronics'",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(revenue)"
+    ]
+  },
+  {
+    "id": 33,
+    "question": "What is total revenue from the Grocery category?",
+    "gold_sql": "SELECT SUM(revenue) FROM main_semantic.metric_product_performance WHERE category = 'Grocery'",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(revenue)"
+    ]
+  },
+  {
+    "id": 34,
+    "question": "Which product category has sold the most units?",
+    "gold_sql": "SELECT category, SUM(units_sold) AS units FROM main_semantic.metric_product_performance GROUP BY category ORDER BY units DESC LIMIT 1",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "category",
+      "units"
+    ]
+  },
+  {
+    "id": 35,
+    "question": "What is the average gross profit per product across all products?",
+    "gold_sql": "SELECT AVG(gross_profit) FROM main_semantic.metric_product_performance",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "avg(gross_profit)"
+    ]
+  },
+  {
+    "id": 36,
+    "question": "How many products have never been ordered?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_product_performance WHERE order_count = 0",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 37,
+    "question": "What is total revenue for products from brand Amber&Co?",
+    "gold_sql": "SELECT SUM(mp.revenue) FROM main_semantic.metric_product_performance mp JOIN main_marts.dim_products p ON mp.product_id = p.product_id WHERE p.brand = 'Amber&Co'",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(mp.revenue)"
+    ]
+  },
+  {
+    "id": 38,
+    "question": "What is total revenue for products from brand Bluepeak?",
+    "gold_sql": "SELECT SUM(mp.revenue) FROM main_semantic.metric_product_performance mp JOIN main_marts.dim_products p ON mp.product_id = p.product_id WHERE p.brand = 'Bluepeak'",
+    "tag": "product_performance",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(mp.revenue)"
+    ]
+  },
+  {
+    "id": 39,
+    "question": "How many completed orders were placed in 2022?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND EXTRACT(year FROM order_date) = 2022",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 40,
+    "question": "How many completed orders were placed in 2023?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND EXTRACT(year FROM order_date) = 2023",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 41,
+    "question": "How many completed orders were placed in 2024?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND EXTRACT(year FROM order_date) = 2024",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 42,
+    "question": "What was total revenue in the most recent full month?",
+    "gold_sql": "SELECT date_trunc('month', order_date)::date AS month, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY 1 ORDER BY 1 DESC LIMIT 1",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "month",
+      "revenue"
+    ]
+  },
+  {
+    "id": 43,
+    "question": "What is total revenue by quarter?",
+    "gold_sql": "SELECT date_trunc('quarter', order_date)::date AS quarter, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY 1 ORDER BY 1",
+    "tag": "time_based",
+    "gold_row_count": 17,
+    "gold_columns": [
+      "quarter",
+      "revenue"
+    ]
+  },
+  {
+    "id": 44,
+    "question": "How many orders were placed on weekends?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_date d ON o.order_date = d.date_day WHERE d.is_weekend = true",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 45,
+    "question": "What is average revenue per order by day of week?",
+    "gold_sql": "SELECT d.day_name, AVG(o.order_total) AS avg_revenue FROM main_marts.fact_orders o JOIN main_marts.dim_date d ON o.order_date = d.date_day WHERE o.order_status = 'completed' GROUP BY d.day_name, d.day_of_week ORDER BY d.day_of_week",
+    "tag": "time_based",
+    "gold_row_count": 7,
+    "gold_columns": [
+      "day_name",
+      "avg_revenue"
+    ]
+  },
+  {
+    "id": 46,
+    "question": "How many new customers signed up each year?",
+    "gold_sql": "SELECT EXTRACT(year FROM signup_date) AS signup_year, COUNT(*) AS new_customers FROM main_marts.dim_customers GROUP BY 1 ORDER BY 1",
+    "tag": "time_based",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "signup_year",
+      "new_customers"
+    ]
+  },
+  {
+    "id": 47,
+    "question": "What is the total revenue trend by month for the current year?",
+    "gold_sql": "SELECT date_trunc('month', order_date)::date AS month, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' AND EXTRACT(year FROM order_date) = EXTRACT(year FROM current_date) GROUP BY 1 ORDER BY 1",
+    "tag": "time_based",
+    "gold_row_count": 8,
+    "gold_columns": [
+      "month",
+      "revenue"
+    ]
+  },
+  {
+    "id": 48,
+    "question": "How many orders were placed in the last 30 days?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_date >= current_date - INTERVAL 30 DAY",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 49,
+    "question": "How many orders were placed in the last 7 days?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_date >= current_date - INTERVAL 7 DAY",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 50,
+    "question": "What was the earliest order date on record?",
+    "gold_sql": "SELECT MIN(order_date) FROM main_marts.fact_orders",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "min(order_date)"
+    ]
+  },
+  {
+    "id": 51,
+    "question": "What was the most recent order date on record?",
+    "gold_sql": "SELECT MAX(order_date) FROM main_marts.fact_orders",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "max(order_date)"
+    ]
+  },
+  {
+    "id": 52,
+    "question": "How many products were launched in the last 2 years?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_products WHERE launch_date >= current_date - INTERVAL 730 DAY",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 53,
+    "question": "What is month-over-month revenue for the last 6 months with data?",
+    "gold_sql": "SELECT date_trunc('month', order_date)::date AS month, SUM(order_total) AS revenue FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY 1 ORDER BY 1 DESC LIMIT 6",
+    "tag": "time_based",
+    "gold_row_count": 6,
+    "gold_columns": [
+      "month",
+      "revenue"
+    ]
+  },
+  {
+    "id": 54,
+    "question": "How many completed orders happened in Q1 of any year?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_date d ON o.order_date = d.date_day WHERE o.order_status = 'completed' AND d.quarter = 1",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 55,
+    "question": "What is total revenue generated on Mondays?",
+    "gold_sql": "SELECT SUM(o.order_total) FROM main_marts.fact_orders o JOIN main_marts.dim_date d ON o.order_date = d.date_day WHERE o.order_status = 'completed' AND d.day_name = 'Monday'",
+    "tag": "time_based",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(o.order_total)"
+    ]
+  },
+  {
+    "id": 56,
+    "question": "How many customers do we have in Z?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE state_code = 'A'",
+    "tag": "geographic_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 57,
+    "question": "How many customers do we have in A?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE state_code = 'C'",
+    "tag": "geographic_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 58,
+    "question": "How many customers do we have in O?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE state_code = 'C'",
+    "tag": "geographic_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 59,
+    "question": "How many stores do we have in each region?",
+    "gold_sql": "SELECT region, COUNT(*) AS store_count FROM main_marts.dim_stores GROUP BY region ORDER BY store_count DESC",
+    "tag": "geographic",
+    "gold_row_count": 4,
+    "gold_columns": [
+      "region",
+      "store_count"
+    ]
+  },
+  {
+    "id": 60,
+    "question": "Which region has the most customers?",
+    "gold_sql": "SELECT region, COUNT(*) AS n FROM main_marts.dim_customers GROUP BY region ORDER BY n DESC LIMIT 1",
+    "tag": "geographic",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "region",
+      "n"
+    ]
+  },
+  {
+    "id": 61,
+    "question": "How many completed orders came from customers in the Midwest region?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' AND c.region = 'Midwest'",
+    "tag": "geographic",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 62,
+    "question": "How many completed orders came from customers in the Northeast region?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' AND c.region = 'Northeast'",
+    "tag": "geographic",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 63,
+    "question": "How many completed orders came from customers in the South region?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' AND c.region = 'South'",
+    "tag": "geographic",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 64,
+    "question": "How many international (non-US) customers do we have?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE country != 'US'",
+    "tag": "geographic",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 65,
+    "question": "What percentage of customers are in the West region?",
+    "gold_sql": "SELECT 100.0 * COUNT(*) FILTER (WHERE region = 'West') / COUNT(*) FROM main_marts.dim_customers",
+    "tag": "geographic",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "((100.0 * count_star() FILTER (WHERE (region = 'West'))) / count_star())"
+    ]
+  },
+  {
+    "id": 66,
+    "question": "How many stores are in California?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_stores WHERE state_code = 'CA'",
+    "tag": "geographic_value_index",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 67,
+    "question": "How many customers are active in the last 30 days?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_active_users WHERE is_active_30d = true",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 68,
+    "question": "How many customers are active in the last 90 days?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_active_users WHERE is_active_90d = true",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 69,
+    "question": "What percentage of customers are opted into marketing communications?",
+    "gold_sql": "SELECT 100.0 * COUNT(*) FILTER (WHERE is_marketing_opt_in) / COUNT(*) FROM main_marts.dim_customers",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "((100.0 * count_star() FILTER (WHERE is_marketing_opt_in)) / count_star())"
+    ]
+  },
+  {
+    "id": 70,
+    "question": "How many customers were acquired through affiliate?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE acquisition_channel = 'affiliate'",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 71,
+    "question": "How many customers were acquired through email?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE acquisition_channel = 'email'",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 72,
+    "question": "How many customers were acquired through organic?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.dim_customers WHERE acquisition_channel = 'organic'",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 73,
+    "question": "What is the average lifetime completed order count per active customer?",
+    "gold_sql": "SELECT AVG(lifetime_completed_orders) FROM main_semantic.metric_active_users WHERE is_active_90d = true",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "avg(lifetime_completed_orders)"
+    ]
+  },
+  {
+    "id": 74,
+    "question": "How many customers have placed more than 5 completed orders?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_customer_revenue WHERE completed_order_count > 5",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 75,
+    "question": "What is the average customer age?",
+    "gold_sql": "SELECT AVG(age_years) FROM main_marts.dim_customers WHERE age_years IS NOT NULL",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "avg(age_years)"
+    ]
+  },
+  {
+    "id": 76,
+    "question": "How many customers signed up but have never placed a completed order?",
+    "gold_sql": "SELECT COUNT(*) FROM main_semantic.metric_active_users WHERE lifetime_completed_orders = 0",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 77,
+    "question": "What acquisition channel produces customers with the highest average lifetime revenue?",
+    "gold_sql": "SELECT c.acquisition_channel, AVG(m.lifetime_revenue) AS avg_revenue FROM main_marts.dim_customers c JOIN main_semantic.metric_customer_revenue m ON c.customer_id = m.customer_id GROUP BY c.acquisition_channel ORDER BY avg_revenue DESC LIMIT 1",
+    "tag": "customer_behavior",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "acquisition_channel",
+      "avg_revenue"
+    ]
+  },
+  {
+    "id": 78,
+    "question": "How many campaign touches resulted in a conversion?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_campaign_touches WHERE touch_type = 'conversion'",
+    "tag": "marketing",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 79,
+    "question": "How many distinct customers were touched by any marketing campaign?",
+    "gold_sql": "SELECT COUNT(DISTINCT customer_id) FROM main_marts.fact_campaign_touches",
+    "tag": "marketing",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count(DISTINCT customer_id)"
+    ]
+  },
+  {
+    "id": 80,
+    "question": "Which campaign channel has the most touches?",
+    "gold_sql": "SELECT campaign_channel, COUNT(*) AS n FROM main_marts.fact_campaign_touches GROUP BY campaign_channel ORDER BY n DESC LIMIT 1",
+    "tag": "marketing",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "campaign_channel",
+      "n"
+    ]
+  },
+  {
+    "id": 81,
+    "question": "What is the click-through count by campaign channel?",
+    "gold_sql": "SELECT campaign_channel, COUNT(*) FILTER (WHERE touch_type = 'click') AS clicks FROM main_marts.fact_campaign_touches GROUP BY campaign_channel ORDER BY clicks DESC",
+    "tag": "marketing",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "campaign_channel",
+      "clicks"
+    ]
+  },
+  {
+    "id": 82,
+    "question": "What is the conversion rate (conversions / total touches) by campaign channel?",
+    "gold_sql": "SELECT campaign_channel, 100.0 * COUNT(*) FILTER (WHERE touch_type = 'conversion') / COUNT(*) AS conversion_rate_pct FROM main_marts.fact_campaign_touches GROUP BY campaign_channel ORDER BY conversion_rate_pct DESC",
+    "tag": "marketing",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "campaign_channel",
+      "conversion_rate_pct"
+    ]
+  },
+  {
+    "id": 83,
+    "question": "Which single campaign has generated the most conversions?",
+    "gold_sql": "SELECT campaign_name, COUNT(*) AS conversions FROM main_marts.fact_campaign_touches WHERE touch_type = 'conversion' GROUP BY campaign_name ORDER BY conversions DESC LIMIT 1",
+    "tag": "marketing",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "campaign_name",
+      "conversions"
+    ]
+  },
+  {
+    "id": 84,
+    "question": "How many customers touched by an email campaign later became active in the last 90 days?",
+    "gold_sql": "SELECT COUNT(DISTINCT t.customer_id) FROM main_marts.fact_campaign_touches t JOIN main_semantic.metric_active_users u ON t.customer_id = u.customer_id WHERE t.campaign_channel = 'email' AND u.is_active_90d = true",
+    "tag": "marketing",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count(DISTINCT t.customer_id)"
+    ]
+  },
+  {
+    "id": 85,
+    "question": "What is the total number of impressions recorded across all campaigns?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_campaign_touches WHERE touch_type = 'impression'",
+    "tag": "marketing",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 86,
+    "question": "How many successful payments were made via bank_transfer?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_payments WHERE payment_method = 'bank_transfer' AND payment_status = 'succeeded'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 87,
+    "question": "How many successful payments were made via buy_now_pay_later?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_payments WHERE payment_method = 'buy_now_pay_later' AND payment_status = 'succeeded'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 88,
+    "question": "How many successful payments were made via credit_card?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_payments WHERE payment_method = 'credit_card' AND payment_status = 'succeeded'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 89,
+    "question": "What is total amount collected by payment method?",
+    "gold_sql": "SELECT payment_method, SUM(amount) AS total_collected FROM main_marts.fact_payments WHERE payment_status = 'succeeded' GROUP BY payment_method ORDER BY total_collected DESC",
+    "tag": "payment_channel",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "payment_method",
+      "total_collected"
+    ]
+  },
+  {
+    "id": 90,
+    "question": "How many payments failed?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_payments WHERE payment_status = 'failed'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 91,
+    "question": "What percentage of payments were refunded?",
+    "gold_sql": "SELECT 100.0 * COUNT(*) FILTER (WHERE payment_status = 'refunded') / COUNT(*) FROM main_marts.fact_payments",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "((100.0 * count_star() FILTER (WHERE (payment_status = 'refunded'))) / count_star())"
+    ]
+  },
+  {
+    "id": 92,
+    "question": "How many completed orders were placed through the marketplace channel?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND channel = 'marketplace'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 93,
+    "question": "How many completed orders were placed through the online channel?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND channel = 'online'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 94,
+    "question": "How many completed orders were placed through the retail channel?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE order_status = 'completed' AND channel = 'retail'",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 95,
+    "question": "Which sales channel has the highest average order value?",
+    "gold_sql": "SELECT channel, AVG(order_total) AS avg_order_value FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY channel ORDER BY avg_order_value DESC LIMIT 1",
+    "tag": "payment_channel",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "channel",
+      "avg_order_value"
+    ]
+  },
+  {
+    "id": 96,
+    "question": "What is total revenue per completed order, joined with its line items, without double-counting the order total?",
+    "gold_sql": "SELECT o.order_id, o.order_total FROM main_marts.fact_orders o WHERE o.order_status = 'completed' LIMIT 20",
+    "tag": "grain_sensitive",
+    "gold_row_count": 20,
+    "gold_columns": [
+      "order_id",
+      "order_total"
+    ]
+  },
+  {
+    "id": 97,
+    "question": "What is the correct total revenue when considering both orders and their line items (should not double count)?",
+    "gold_sql": "SELECT SUM(order_total) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+    "tag": "grain_sensitive",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(order_total)"
+    ]
+  },
+  {
+    "id": 98,
+    "question": "What is total revenue computed strictly from line items at the order-item grain?",
+    "gold_sql": "SELECT SUM(extended_price) FROM main_marts.fact_order_items WHERE order_status = 'completed'",
+    "tag": "grain_sensitive",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "sum(extended_price)"
+    ]
+  },
+  {
+    "id": 99,
+    "question": "For each customer, what is their average number of items per completed order?",
+    "gold_sql": "SELECT customer_id, AVG(item_count) AS avg_items_per_order FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY customer_id ORDER BY avg_items_per_order DESC LIMIT 10",
+    "tag": "grain_sensitive",
+    "gold_row_count": 10,
+    "gold_columns": [
+      "customer_id",
+      "avg_items_per_order"
+    ]
+  },
+  {
+    "id": 100,
+    "question": "What is total quantity of units sold per product category, at the line-item grain?",
+    "gold_sql": "SELECT p.category, SUM(oi.quantity) AS units FROM main_marts.fact_order_items oi JOIN main_marts.dim_products p ON oi.product_id = p.product_id WHERE oi.order_status = 'completed' GROUP BY p.category ORDER BY units DESC",
+    "tag": "grain_sensitive",
+    "gold_row_count": 7,
+    "gold_columns": [
+      "category",
+      "units"
+    ]
+  },
+  {
+    "id": 101,
+    "question": "How many orders had more than 5 line items?",
+    "gold_sql": "SELECT COUNT(*) FROM main_marts.fact_orders WHERE item_count > 5",
+    "tag": "grain_sensitive",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "count_star()"
+    ]
+  },
+  {
+    "id": 102,
+    "question": "What is the gap between order_total and the sum of amount_collected for completed orders?",
+    "gold_sql": "SELECT SUM(order_total) - SUM(amount_collected) FROM main_marts.fact_orders WHERE order_status = 'completed'",
+    "tag": "grain_sensitive",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "(sum(order_total) - sum(amount_collected))"
+    ]
+  },
+  {
+    "id": 103,
+    "question": "What is the average discount percentage applied across all order line items?",
+    "gold_sql": "SELECT AVG(discount_pct) FROM main_marts.fact_order_items WHERE discount_pct > 0",
+    "tag": "grain_sensitive",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "avg(discount_pct)"
+    ]
+  },
+  {
+    "id": 104,
+    "question": "What are the top 3 regions by number of completed orders?",
+    "gold_sql": "SELECT c.region, COUNT(*) AS n FROM main_marts.fact_orders o JOIN main_marts.dim_customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'completed' GROUP BY c.region ORDER BY n DESC LIMIT 3",
+    "tag": "ranking",
+    "gold_row_count": 3,
+    "gold_columns": [
+      "region",
+      "n"
+    ]
+  },
+  {
+    "id": 105,
+    "question": "What are the 5 lowest-margin products currently active?",
+    "gold_sql": "SELECT product_name, margin_pct FROM main_marts.dim_products WHERE is_active = true ORDER BY margin_pct ASC LIMIT 5",
+    "tag": "ranking",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "product_name",
+      "margin_pct"
+    ]
+  },
+  {
+    "id": 106,
+    "question": "Who are the bottom 5 customers by lifetime revenue (with at least one completed order)?",
+    "gold_sql": "SELECT customer_id, full_name, lifetime_revenue FROM main_semantic.metric_customer_revenue WHERE completed_order_count > 0 ORDER BY lifetime_revenue ASC LIMIT 5",
+    "tag": "ranking",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "customer_id",
+      "full_name",
+      "lifetime_revenue"
+    ]
+  },
+  {
+    "id": 107,
+    "question": "What are the top 3 subcategories by revenue?",
+    "gold_sql": "SELECT p.subcategory, SUM(oi.extended_price) AS revenue FROM main_marts.fact_order_items oi JOIN main_marts.dim_products p ON oi.product_id = p.product_id WHERE oi.order_status = 'completed' GROUP BY p.subcategory ORDER BY revenue DESC LIMIT 3",
+    "tag": "ranking",
+    "gold_row_count": 3,
+    "gold_columns": [
+      "subcategory",
+      "revenue"
+    ]
+  },
+  {
+    "id": 108,
+    "question": "Which store has processed the most completed orders?",
+    "gold_sql": "SELECT store_id, COUNT(*) AS n FROM main_marts.fact_orders WHERE order_status = 'completed' GROUP BY store_id ORDER BY n DESC LIMIT 1",
+    "tag": "ranking",
+    "gold_row_count": 1,
+    "gold_columns": [
+      "store_id",
+      "n"
+    ]
+  },
+  {
+    "id": 109,
+    "question": "What are the top 5 states by customer count?",
+    "gold_sql": "SELECT state_code, COUNT(*) AS n FROM main_marts.dim_customers GROUP BY state_code ORDER BY n DESC LIMIT 5",
+    "tag": "ranking",
+    "gold_row_count": 5,
+    "gold_columns": [
+      "state_code",
+      "n"
+    ]
+  }
+]
