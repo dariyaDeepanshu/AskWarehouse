@@ -37,10 +37,13 @@ def _normalize(question: str) -> str:
 class SQLCache:
     def __init__(self, config: SafetyConfig = DEFAULT_SAFETY_CONFIG):
         self.config = config
-        os.makedirs(os.path.dirname(config.cache_db_path), exist_ok=True)
-        con = duckdb.connect(config.cache_db_path)
-        con.execute(_SCHEMA_SQL)
-        con.close()
+        try:
+            os.makedirs(os.path.dirname(config.cache_db_path), exist_ok=True)
+            con = duckdb.connect(config.cache_db_path)
+            con.execute(_SCHEMA_SQL)
+            con.close()
+        except Exception:
+            pass
 
     def schema_version(self) -> str:
         with readonly_connection(self.config) as con:
@@ -58,30 +61,36 @@ class SQLCache:
         return hashlib.sha256(f"{_normalize(question)}::{schema_version}".encode()).hexdigest()
 
     def get(self, question: str) -> CacheEntry | None:
-        schema_version = self.schema_version()
-        fp = self._fingerprint(question, schema_version)
-        con = duckdb.connect(self.config.cache_db_path)
         try:
-            row = con.execute(
-                "SELECT sql_text FROM sql_cache WHERE fingerprint = ?", [fp]
-            ).fetchone()
-            if row is None:
-                return None
-            con.execute("UPDATE sql_cache SET hit_count = hit_count + 1 WHERE fingerprint = ?", [fp])
-            return CacheEntry(sql_text=row[0], schema_version=schema_version)
-        finally:
-            con.close()
+            schema_version = self.schema_version()
+            fp = self._fingerprint(question, schema_version)
+            con = duckdb.connect(self.config.cache_db_path)
+            try:
+                row = con.execute(
+                    "SELECT sql_text FROM sql_cache WHERE fingerprint = ?", [fp]
+                ).fetchone()
+                if row is None:
+                    return None
+                con.execute("UPDATE sql_cache SET hit_count = hit_count + 1 WHERE fingerprint = ?", [fp])
+                return CacheEntry(sql_text=row[0], schema_version=schema_version)
+            finally:
+                con.close()
+        except Exception:
+            return None
 
     def put(self, question: str, sql_text: str) -> None:
-        schema_version = self.schema_version()
-        fp = self._fingerprint(question, schema_version)
-        con = duckdb.connect(self.config.cache_db_path)
         try:
-            con.execute(
-                """INSERT INTO sql_cache (fingerprint, question, schema_version, sql_text)
-                   VALUES (?, ?, ?, ?)
-                   ON CONFLICT (fingerprint) DO UPDATE SET sql_text = excluded.sql_text""",
-                [fp, question, schema_version, sql_text],
-            )
-        finally:
-            con.close()
+            schema_version = self.schema_version()
+            fp = self._fingerprint(question, schema_version)
+            con = duckdb.connect(self.config.cache_db_path)
+            try:
+                con.execute(
+                    """INSERT INTO sql_cache (fingerprint, question, schema_version, sql_text)
+                       VALUES (?, ?, ?, ?)
+                       ON CONFLICT (fingerprint) DO UPDATE SET sql_text = excluded.sql_text""",
+                    [fp, question, schema_version, sql_text],
+                )
+            finally:
+                con.close()
+        except Exception:
+            pass

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "memory": 1024,
+      "includeFiles": "{src,dbt_project,data}/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(ask|verify|audit|health|config|examples)", "destination": "/api/index" }
+  ]
+}

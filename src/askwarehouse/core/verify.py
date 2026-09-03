@@ -56,14 +56,24 @@ def _results_match(orig_columns, orig_rows, verify_columns, verify_rows) -> bool
     # single aggregate value: compare numerically with tolerance (float rounding,
     # not a stand-in for a real mismatch)
     if len(orig_rows) == 1 and len(orig_columns) == len(verify_columns) == 1:
-        return _numeric_close(orig_rows[0][0], verify_rows[0][0])
-    # multi-row: compare as sets of tuples (order/column-name independent),
-    # numeric values rounded to absorb float noise
+        a, b = orig_rows[0][0], verify_rows[0][0]
+        if _numeric_close(a, b):
+            return True
+        return (a is None and b is None) or str(a) == str(b)
+    # multi-row: compare as sets of tuples (order/column-name independent).
+    # numeric values are rounded to absorb float noise; everything else is
+    # compared by str() so a date that survived a JSON round-trip as
+    # "2025-01-01" still matches a native datetime.date from a fresh run.
+    def _cell(v):
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, (int, float)):
+            return round(float(v), 2)
+        return None if v is None else str(v)
+
     def normalize(rows):
-        out = set()
-        for r in rows:
-            out.add(tuple(round(v, 2) if isinstance(v, float) else v for v in r))
-        return out
+        return {tuple(_cell(v) for v in r) for r in rows}
+
     return normalize(orig_rows) == normalize(verify_rows)
 
 

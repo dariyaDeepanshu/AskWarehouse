@@ -8,6 +8,11 @@ plus the SQL it used.
 Full architecture writeup (diagram + component breakdown): **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 / [published version](https://claude.ai/code/artifact/420109db-206e-407a-9ecf-9880bf303b7a)
 
+**Deploy it as a website (Vercel):** see **[DEPLOY.md](DEPLOY.md)**. A Next.js chat UI
+(`app/`, `components/`) plus one Python serverless function (`api/index.py`) that runs
+this exact pipeline against a bundled demo warehouse, using a free-tier hosted model
+(Gemini / Groq) in place of the local GPU model.
+
 > **Interview soundbite** (real numbers from this run, not aspirational): "On BIRD mini-dev,
 > schema retrieval plus a value index took execution accuracy from 32% to 38% with a local
 > 7B model and zero API cost -- self-critique alone actually cost a point (36%), and the repair

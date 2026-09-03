@@ -17,11 +17,15 @@ instruction:
 Both checks are independent of the model's behavior -- a compromised or
 badly-prompted model cannot bypass either one from the SQL text alone.
 """
+import os
 from dataclasses import dataclass, field
 
-WAREHOUSE_PATH = "data/warehouse/warehouse.duckdb"
-AUDIT_DB_PATH = "data/warehouse/audit.duckdb"
-CACHE_DB_PATH = "data/warehouse/cache.duckdb"
+# Paths are env-overridable so the serverless deployment can point the
+# warehouse at a bundled read-only file and the (ephemeral) audit/cache DBs
+# at a writable /tmp location.
+WAREHOUSE_PATH = os.environ.get("ASKWAREHOUSE_WAREHOUSE_PATH", "data/warehouse/warehouse.duckdb")
+AUDIT_DB_PATH = os.environ.get("ASKWAREHOUSE_AUDIT_DB_PATH", "data/warehouse/audit.duckdb")
+CACHE_DB_PATH = os.environ.get("ASKWAREHOUSE_CACHE_DB_PATH", "data/warehouse/cache.duckdb")
 
 # Only these schemas are queryable by the agent. `main_staging` and the raw
 # `raw` schema are deliberately excluded -- they hold pre-normalization data

@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-DATE_HINT_NAMES = {"date", "order_date", "month", "day", "year", "quarter", "date_day", "month_name"}
+from askwarehouse.core.chart_spec import DATE_HINT_NAMES, choose_chart_kind  # noqa: F401
 
 
 @dataclass
@@ -18,30 +18,6 @@ class ChartResult:
     kind: str  # 'single_value' | 'bar' | 'line' | 'table_only'
     png_base64: str | None = None
     note: str = ""
-
-
-def _is_numeric(v) -> bool:
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
-
-
-def choose_chart_kind(columns: list, rows: list) -> str:
-    if not rows or not columns:
-        return "table_only"
-    if len(rows) == 1 and len(columns) <= 2:
-        return "single_value"
-    if len(columns) < 2:
-        return "table_only"
-    if len(rows) > 100:
-        return "table_only"
-
-    first_col_is_dateish = columns[0].lower() in DATE_HINT_NAMES or "date" in columns[0].lower()
-    second_col_numeric = all(_is_numeric(r[1]) for r in rows if r[1] is not None)
-
-    if not second_col_numeric:
-        return "table_only"
-    if first_col_is_dateish:
-        return "line"
-    return "bar"
 
 
 def render_chart(columns: list, rows: list, title: str = "") -> ChartResult:

@@ -2,7 +2,14 @@
 __pycache__/
 *.pyc
 .env
-data/warehouse/*.duckdb
+.env*.local
+
+# the demo warehouse IS committed for the Vercel deploy (see below); other
+# duckdb files (audit/cache/test artifacts) are not
+data/warehouse/audit.duckdb
+data/warehouse/cache.duckdb
+data/warehouse/_test_*.duckdb
+data/warehouse/*.duckdb.wal
 data/bird/
 data/spider/
 data/raw/*.parquet
@@ -16,3 +23,9 @@ models_cache/
 *.gguf
 *.egg-info/
 .DS_Store
+
+# node / next
+node_modules/
+.next/
+.vercel/
+*.tsbuildinfo

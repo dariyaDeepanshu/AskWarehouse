@@ -12,15 +12,16 @@ Two mechanisms, deliberately kept separate:
      columns (dim_stores.state_code) have NO friendly-name column to fall
      back on, so without this the model has to guess 'CA' from "California"
      with nothing but its own world knowledge.
-  2. A general embedding index over the distinct values of every other
+  2. Fuzzy string matching over the distinct values of every other
      low-cardinality categorical column (order_status, channel, brand, ...),
-     for cases where there's no clean reference table -- just fuzzy nearest-
-     neighbor matching between a phrase in the question and a stored value.
+     for cases where there's no clean reference table. The original build
+     used sentence-transformer nearest-neighbour here; this version uses
+     token-overlap + difflib ratio, which is pure-stdlib and works well for
+     the short single-token categorical values these columns actually hold.
 """
 import re
 from dataclasses import dataclass
-
-import numpy as np
+from difflib import SequenceMatcher
 
 from askwarehouse.execution.connection import readonly_connection
 from askwarehouse.safety.config import SafetyConfig, DEFAULT_SAFETY_CONFIG, PII_DENYLIST
@@ -39,13 +40,29 @@ class ValueHint:
     column: str
     value: str
     matched_phrase: str
-    method: str  # 'alias' | 'embedding'
+    method: str  # 'alias' | 'fuzzy'
     score: float
 
 
-def _get_model():
-    from askwarehouse.retrieval.schema_index import _get_model as g
-    return g()
+def _norm(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+
+
+def _similarity(phrase: str, value: str) -> float:
+    """1.0 for an exact (normalized) match, a high score when one string's
+    tokens are a subset of the other's, else a character-level ratio."""
+    p, v = _norm(phrase), _norm(value)
+    if not p or not v:
+        return 0.0
+    if p == v:
+        return 1.0
+    pt, vt = set(p.split()), set(v.split())
+    if pt and vt and (pt <= vt or vt <= pt):
+        return 0.92
+    if pt & vt:
+        overlap = len(pt & vt) / max(len(pt), len(vt))
+        return 0.6 + 0.3 * overlap
+    return SequenceMatcher(None, p, v).ratio()
 
 
 class ValueIndex:
@@ -53,13 +70,11 @@ class ValueIndex:
         self.config = config
         self.alias_map: dict[str, str] = {}       # lowercase full name -> code
         self.alias_columns: list[tuple[str, str]] = []  # (table, column) pairs the alias applies to
-        self._value_meta: list[tuple[str, str, str]] = []  # (table, column, value)
-        self._value_embeds = np.zeros((0, 384))
+        self._values: list[tuple[str, str, str]] = []   # (table, column, value)
         self._build()
 
     def _build(self):
         with readonly_connection(self.config) as con:
-            # 1. alias table from the us_states seed
             try:
                 rows = con.execute("SELECT state_name, state_code FROM main.us_states").fetchall()
                 self.alias_map = {name.lower(): code for name, code in rows}
@@ -74,17 +89,15 @@ class ValueIndex:
                 ).fetchall()
                 self.alias_columns.extend([(t, c) for t, c in cols])
 
-            # 2. general embedding index over other low-cardinality VARCHAR columns
             candidate_cols = con.execute(
-                """SELECT table_schema, table_name, column_name, data_type
+                """SELECT table_schema, table_name, column_name
                    FROM information_schema.columns
                    WHERE table_schema = ANY(?) AND data_type = 'VARCHAR'
                      AND column_name NOT IN ('state_code', 'state_name')""",
                 [list(self.config.allowed_schemas)],
             ).fetchall()
 
-            values_to_embed, meta = [], []
-            for schema, table, column, _dtype in candidate_cols:
+            for schema, table, column, *_ in candidate_cols:
                 if (table, column) in PII_DENYLIST:
                     continue
                 try:
@@ -101,12 +114,7 @@ class ValueIndex:
                 except Exception:
                     continue
                 for v in distinct_vals:
-                    values_to_embed.append(str(v))
-                    meta.append((table, column, str(v)))
-
-            self._value_meta = meta
-            if values_to_embed:
-                self._value_embeds = _get_model().encode(values_to_embed, normalize_embeddings=True)
+                    self._values.append((table, column, str(v)))
 
     def _candidate_phrases(self, question: str) -> list[str]:
         words = re.findall(r"[A-Za-z']+", question)
@@ -119,7 +127,7 @@ class ValueIndex:
                 phrases.add(" ".join(span))
         return list(phrases)
 
-    def lookup(self, question: str, embedding_threshold: float = 0.62, max_hints: int = 6) -> list[ValueHint]:
+    def lookup(self, question: str, fuzzy_threshold: float = 0.82, max_hints: int = 6) -> list[ValueHint]:
         hints: list[ValueHint] = []
         q_lower = question.lower()
         alias_resolved_phrases: set[str] = set()
@@ -130,36 +138,33 @@ class ValueIndex:
                 alias_resolved_phrases.add(full_name)
                 for table, column in self.alias_columns:
                     if table == "us_states":
-                        continue  # that's the alias source itself, not a queryable fact/dim
+                        continue
                     hints.append(ValueHint(
                         table=table, column=column, value=code,
                         matched_phrase=full_name, method="alias", score=1.0,
                     ))
 
-        # 2. embedding nearest-neighbor over general categorical values
-        if len(self._value_embeds):
-            phrases = self._candidate_phrases(question)
-            if phrases:
-                model = _get_model()
-                phrase_embeds = model.encode(phrases, normalize_embeddings=True)
-                sims = phrase_embeds @ self._value_embeds.T  # [n_phrases, n_values]
-                best_idx = sims.argmax(axis=1)
-                best_score = sims.max(axis=1)
-                seen = set()
-                for phrase, idx, score in zip(phrases, best_idx, best_score):
-                    if score < embedding_threshold:
-                        continue
-                    if phrase.lower() in alias_resolved_phrases:
-                        continue
-                    table, column, value = self._value_meta[idx]
-                    key = (table, column, value)
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    hints.append(ValueHint(
-                        table=table, column=column, value=value,
-                        matched_phrase=phrase, method="embedding", score=float(score),
-                    ))
+        # 2. fuzzy match over general categorical values
+        phrases = self._candidate_phrases(question)
+        seen: set[tuple] = set()
+        for phrase in phrases:
+            if phrase.lower() in alias_resolved_phrases:
+                continue
+            best = None
+            for table, column, value in self._values:
+                sc = _similarity(phrase, value)
+                if best is None or sc > best[0]:
+                    best = (sc, table, column, value)
+            if best and best[0] >= fuzzy_threshold:
+                sc, table, column, value = best
+                key = (table, column, value)
+                if key in seen:
+                    continue
+                seen.add(key)
+                hints.append(ValueHint(
+                    table=table, column=column, value=value,
+                    matched_phrase=phrase, method="fuzzy", score=float(sc),
+                ))
 
         hints.sort(key=lambda h: -h.score)
         return hints[:max_hints]

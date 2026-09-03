@@ -1,0 +1,23 @@
+# keep the deployment upload (and the Python function bundle) lean.
+# api/index.py needs: src/**, dbt_project/models/**/*.yml, and
+# data/warehouse/warehouse.duckdb -- nothing else from Python land.
+.venv/
+node_modules/
+.next/
+eval/
+docs/
+scripts/
+dbt_project/target/
+dbt_project/logs/
+dbt_project/dbt_packages/
+/requirements.txt
+/requirements-dev.txt
+/pyproject.toml
+data/warehouse/audit.duckdb
+data/warehouse/cache.duckdb
+data/warehouse/cache.duckdb.wal
+data/warehouse/audit.duckdb.wal
+data/warehouse/_test_*.duckdb
+*.egg-info/
+__pycache__/
+.pytest_cache/
